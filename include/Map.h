@@ -63,7 +63,12 @@ public:
     void setMaxIndex(const int &index);
     int getMaxIndex();
     
+    void setGlobalMapUpdated(const bool &isupdated);
+    bool hasGlobalMap();
+    
 private:
+    
+    bool _updateMap;
   
     int maxindex;
     
@@ -98,7 +103,13 @@ public:
     
     std::vector<Eigen::Vector3d> mvPointsPos;
     
-    std::vector<KFPair> mvKFItems; 
+    //id, mnId, KF
+    std::map<int, std::pair<int, KFPair>> mKFItems;
+    
+    // mnId, point list
+    std::map<int, std::vector<int>> mKFPtIds;
+    
+    std::vector<shared_ptr<DP>> vCloud;
 
 protected:
     std::set<MapPoint*> mspMapPoints;

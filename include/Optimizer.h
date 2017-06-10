@@ -42,6 +42,9 @@ class LoopClosing;
 
 class Optimizer
 {
+// public:
+//     void static PnPinitilization();
+  
 public:
     void static GlobalBundleAdjustmentNavState(Map* pMap, 
 					       ICPer &icper,

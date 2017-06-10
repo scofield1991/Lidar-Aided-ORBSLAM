@@ -265,6 +265,91 @@ mpMapDB(pMapDB), isInitMapDB(false)
     }
 }
   
+void Tracking::WithMapInitialization()
+{
+    if(mCurrentFrame.N>500)
+    { 
+	int selectedId = 350;
+	
+	pair<int, KFPair> tempKFP = mpMap->mKFItems[selectedId];
+	int mnId = tempKFP.first;
+	KFPair kfpair = tempKFP.second;
+	vector<int> pIdList = mpMap->mKFPtIds[mnId];
+	shared_ptr<DP> lidarMap = mpMap->vCloud[selectedId];
+	
+	//ICP initialization
+	icper.reset();
+	icper.process_map(lidarMap, mCurrentFrame.pCloud);
+	NavState dT;
+	dT.Set_Pos(icper.getDeltaP());
+	dT.Set_Rot(icper.getDeltaR());
+	NavState Twl = kfpair.Twl;
+	Twl.IncSmall(dT);
+	
+	cout << Twl.Get_RotMatrix() << endl;
+	cout << Twl.Get_P() << endl;
+	
+        // Set Frame pose to the origin
+        mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+	mCurrentFrame.SetNavState(Twl);
+	mCurrentFrame.UpdatePoseFromNS(ConfigParam::GetMatToc());
+	
+	cout << mCurrentFrame.mTcw << endl;
+	
+        // Create KeyFrame
+        KeyFrame* pKFini = new KeyFrame(mCurrentFrame,
+					mpMap,
+					mpKeyFrameDB,
+					NULL);
+	pKFini->SetNavState(mCurrentFrame.GetNavState());
+	
+        // Insert KeyFrame in the map
+        mpMap->AddKeyFrame(pKFini);
+// 	mpLidarMap->AddKeyFrame(pKFini);
+
+        // Create MapPoints and asscoiate to KeyFrame
+        for(int i=0; i<mCurrentFrame.N;i++)
+        {
+            float z = mCurrentFrame.mvDepth[i];
+            if(z>0)
+            {
+                cv::Mat x3D = mCurrentFrame.UnprojectStereo(i);
+                MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpMap);
+                pNewMP->AddObservation(pKFini,i);
+                pKFini->AddMapPoint(pNewMP,i);
+                pNewMP->ComputeDistinctiveDescriptors();
+                pNewMP->UpdateNormalAndDepth();
+                mpMap->AddMapPoint(pNewMP);
+
+                mCurrentFrame.mvpMapPoints[i]=pNewMP;
+            }
+        }
+
+        cout << "New map created with " << mpMap->MapPointsInMap() << " points" << endl;
+// 	cout << "New Lidar Map created with " << mpLidarMap->MapPointsInMap() << " points" << endl;
+
+        mpLocalMapper->InsertKeyFrame(pKFini);
+
+        mLastFrame = Frame(mCurrentFrame);
+        mnLastKeyFrameId=mCurrentFrame.mnId;
+        mpLastKeyFrame = pKFini;
+
+        mvpLocalKeyFrames.push_back(pKFini);
+        mvpLocalMapPoints=mpMap->GetAllMapPoints();
+        mpReferenceKF = pKFini;
+        mCurrentFrame.mpReferenceKF = pKFini;
+
+        mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
+
+        mpMap->mvpKeyFrameOrigins.push_back(pKFini);
+
+        mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
+// 	mpMapDrawer->SetCurrentLidarPose(Converter::toCvMat(mCurrentFrame.GetNavState()));
+
+        mState=OK;
+    }
+}
+  
 bool Tracking::TrackLocalMapWithLidar(bool bMapUpdated)
 {
     // We have an estimation of the camera pose and some map points tracked in the frame.
@@ -722,7 +807,9 @@ void Tracking::Track()
     
     if(mState==NOT_INITIALIZED)
     {
-        if(mSensor==System::STEREO || mSensor==System::RGBD)
+	if(mpMap->hasGlobalMap())
+	    WithMapInitialization();
+        else if(mSensor==System::STEREO || mSensor==System::RGBD)
             StereoInitialization();
         else
             MonocularInitialization();
@@ -788,41 +875,51 @@ void Tracking::Track()
 // 	      cout << "Finish" << endl;
 // 	      isInitMapDB = true;
 // 	    }
+	    
             // Compute Bag of Words Vector
-	    mCurrentFrame.ComputeBoW();
-
-	    double maxScore = 0.0;
-	    int maxIndex = 0;
-	    vector<int> vCandidates;
-	    for(int i = 0; i < mpMap->mvKFItems.size(); i++)
-	    {
-		KFPair kfp = mpMap->mvKFItems[i];
-		double score = mpORBVocabulary->score(mCurrentFrame.mBowVec, kfp.vBow);
-		if(score > maxScore)
-		{
-		    maxScore = score;
-		    maxIndex = i;
-		    vCandidates.push_back(i);
-// 		    cout << "The " << i << "th KF has a max score with current frame, current max score is " << maxScore << endl;
-		}
-	    }
+// 	    mCurrentFrame.ComputeBoW();
+// 
+// 	    double maxScore = 0.0;
+// 	    int maxIndex = 0;
+// 	    vector<int> vCandidates;
+// 	    for(map<int, KFPair>::iterator it = mpMap->mKFItems.begin(), ite = mpMap->mKFItems.end(); it!=ite; it++)
+// 	    {
+// 		KFPair kfp = it->second;
+// 		double score = mpORBVocabulary->score(mCurrentFrame.mBowVec, kfp.vBow);
+// 		if(score > maxScore)
+// 		{
+// 		    maxScore = score;
+// // 		    maxIndex = i;
+// 		    vCandidates.push_back(it->first);
+// // 		    cout << "The " << i << "th KF has a max score with current frame, current max score is " << maxScore << endl;
+// 		}
+// 	    }
+// 	    
+// 	    cout << "The current max score is " << maxScore << ", at " << maxIndex << "Keyframe." << endl;
+// // 	    mpMap->setMaxIndex(maxIndex);
+// 
+// 	    if(vCandidates.empty())
+// 	    {
+// 		cout << "No probable posation" << endl;
+// 	    }
+// 	    else
+// 	    {
+// 		cout << "Got " << vCandidates.size() << " probable posation" << endl;
+// 	    }
+// 	    
+// 	    for(int i = 0; i < vCandidates.size(); i++)
+// 	    {
+// 		
+// 	    }
 	    
-	    cout << "The current max score is " << maxScore << ", at " << maxIndex << "Keyframe." << endl;
-// 	    mpMap->setMaxIndex(maxIndex);
-
-	    if(vCandidates.empty())
-	    {
-		cout << "No probable posation" << endl;
-	    }
-	    else
-	    {
-		cout << "Got " << vCandidates.size() << " probable posation" << endl;
-	    }
-	    
-	    for(int i = 0; i < vCandidates.size(); i++)
-	    {
-		
-	    }
+// 	    int selectId = 350;
+// 	    std::vector<int> vLocalMapId;
+// 	    for(int i = min(0, selectId - 5); i < max(mpMap->mKFItems.size(), selectId + 5); i++)
+// 		vLocalMapId.push_back(i);
+// 	    for(int it:vLocalMapId)
+// 	    {
+// 		
+// 	    }
         }
 
         mCurrentFrame.mpReferenceKF = mpReferenceKF;
@@ -904,7 +1001,7 @@ void Tracking::Track()
             }
             
         }
-
+        
         // Reset if the camera get lost soon after initialization
         if(mState==LOST)
         {

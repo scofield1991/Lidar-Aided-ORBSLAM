@@ -288,6 +288,8 @@ void MapDrawer::DrawAllLidarPoints()
 
 void MapDrawer::SaveMap()
 {
+    //------------------ Save whole LM --------------------
+    //-----------------------------------------------------
     {
 	if(!mpCloud)
 	{
@@ -300,6 +302,8 @@ void MapDrawer::SaveMap()
   
     const vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
+    //------------------ Save VM --------------------
+    //-----------------------------------------------
     {
 	if(vpMPs.empty())
 	{
@@ -309,7 +313,7 @@ void MapDrawer::SaveMap()
 	
 	// save visual map points
 	ofstream f;
-	f.open("/home/doom/indoor_map/visualmap.txt");
+	f.open("/home/doom/indoor_map/visual_map/visualmap.txt");
 	f << fixed;
 	int totalNum = 0;
 	vector<size_t> index;
@@ -325,9 +329,14 @@ void MapDrawer::SaveMap()
 	for(size_t i=0, iend=index.size(); i<iend;i++)
 	{
 	    cv::Mat pos = vpMPs[index[i]]->GetWorldPos();
-	    f << setprecision(9) << pos.at<float>(0) << " " << pos.at<float>(1) << " " << pos.at<float>(2) << endl;
+	    map<KeyFrame*, size_t> mObs = vpMPs[index[i]]->GetObservations();
+	    f << setprecision(9) << pos.at<float>(0) << " " << pos.at<float>(1) << " " << pos.at<float>(2) << " " << mObs.size();
+	    for(map<KeyFrame*, size_t>::iterator it = mObs.begin(), ite = mObs.end(); it!=ite; it++)
+	    {
+		f << " " << it->first->mnId;
+	    }
+	    f << endl;
 	}
-	f.close();
     }
     
     {
@@ -335,14 +344,26 @@ void MapDrawer::SaveMap()
 	stringstream ss;
 	for(size_t i = 0, iend = vpKFs.size(); i < iend; i++)
 	{
-	    cout << "saving " << i << "th KF" << endl;
 	    KeyFrame* pKF = vpKFs[i];
 	  
+	    //------------------ Save LM --------------------
+	    //-----------------------------------------------
 	    ss.str("");
-	    ss << "/home/doom/indoor_map/kf_";
+	    ss << "/home/doom/indoor_map/lidar_map/lm_";
+	    ss << std::setfill ('0') << std::setw (5) << i << ".vtk";
+	    pKF->pCloud->save(ss.str().c_str());
+	  
+	    //------------------ Save KF --------------------
+	    //-----------------------------------------------
+	    cout << "saving " << i << "th KF" << endl;
+	  
+	    ss.str("");
+	    ss << "/home/doom/indoor_map/kf/kf_";
 	    ss << std::setfill ('0') << std::setw (5) << i << ".txt";
 	    f.open(ss.str().c_str());
 	    f << fixed;
+	    
+	    f << pKF->mnId << endl;
 	    
 	    //save pose and navi state
 	    cv::Mat Twc = pKF->GetPoseInverse();
@@ -417,11 +438,11 @@ void MapDrawer::DrawMapK()
     const float h = w*0.75;
     const float z = w*0.6;
     
-    vector<KFPair> vKFItems = mpMap->mvKFItems;
-    int maxindex = mpMap->getMaxIndex();
-    for(size_t i=0, iend=vKFItems.size(); i<iend;i++)
+    map<int, pair<int, KFPair>> mKFItems = mpMap->mKFItems;
+//     int maxindex = mpMap->getMaxIndex();
+    for(map<int, pair<int, KFPair>>::iterator it = mKFItems.begin(), ite = mKFItems.end(); it!=ite; it++)
     {
-	KFPair kfItem = vKFItems[i];
+	KFPair kfItem = it->second.second;
 	cv::Mat kfPose = kfItem.Twc;
 	
 	glPushMatrix();
@@ -429,10 +450,10 @@ void MapDrawer::DrawMapK()
 	glMultMatrixf(kfPose.ptr<GLfloat>(0));
 
 	glLineWidth(mKeyFrameLineWidth);
-	if(i != maxindex)
+// 	if(i != maxindex)
 	  glColor3f(0.941, 0.502, 0.502);
-	else
-	  glColor3f(0, 1, 1);
+// 	else
+// 	  glColor3f(0, 1, 1);
 	glBegin(GL_LINES);
 	glVertex3f(0,0,0);
 	glVertex3f(w,h,z);

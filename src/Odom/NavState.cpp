@@ -34,4 +34,17 @@ void NavState::IncSmall(Vector6d update)
 
 }
 
+void NavState::IncSmall(NavState& dT)
+{
+    Vector3d upd_P = dT.Get_P();
+    SO3Type  upd_R = dT.Get_R();
+    
+    Matrix3d R = Get_R().matrix();
+    
+    // position
+    _P += R * upd_P;
+    // rotation
+    _R = Get_R()*upd_R;
+}
+
 }

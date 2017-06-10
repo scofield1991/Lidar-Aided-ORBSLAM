@@ -37,6 +37,7 @@ public:
 
     // incremental addition, delta = [dP, dPhi]
     void IncSmall(Vector6d delta);
+    void IncSmall(NavState &dT);
 
     // normalize rotation quaternion. !!! important!!!
     //void normalizeRotation(void){_qR = normalizeRotationQ(_qR);}

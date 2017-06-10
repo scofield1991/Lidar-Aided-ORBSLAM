@@ -30,8 +30,18 @@ bool KFIdComapre::operator ()(const KeyFrame* kfleft,const KeyFrame* kfright) co
     return kfleft->mnId < kfright->mnId;
 }
   
-Map::Map():mnMaxKFid(0),maxindex(0)
+Map::Map():mnMaxKFid(0),maxindex(0),_updateMap(false)
 {
+}
+
+void Map::setGlobalMapUpdated(const bool& isupdated)
+{
+    _updateMap = isupdated;
+}
+
+bool Map::hasGlobalMap()
+{
+    return _updateMap;
 }
 
 void Map::setMaxIndex(const int& index)
@@ -46,6 +56,7 @@ int Map::getMaxIndex()
 
 void Map::LoadMap(const string& str)
 {
+    //load the whole lidar map
     stringstream ss;
     ss << str.c_str() << "/lidarmap.vtk";
     DP tempdp = DP::load(ss.str().c_str());
@@ -53,30 +64,60 @@ void Map::LoadMap(const string& str)
     _cloud = cloud_;
     
     ss.str("");
-    ss << str.c_str() << "/visualmap.txt";
+    ss << str.c_str() << "/visual_map/visualmap.txt";
     ifstream points_in(ss.str().c_str());
     int NumPoints, NumKFs;
     points_in >> NumKFs;
     points_in >> NumPoints;
+    
+    //load lidar map
+    vCloud.clear();
+    for(int i = 0; i < NumKFs; i++)
+    {
+	ss.str("");
+	ss << str.c_str() << "/lidar_map/lm_" << std::setfill ('0') << std::setw (5) << i << ".vtk";
+	DP tDP = DP::load(ss.str().c_str());
+	tDP.removeFeature("z");
+	DP::View viewOnnormals = tDP.getDescriptorViewByName("normals");
+	Eigen::MatrixXf newNormals = viewOnnormals.topRows(2);
+	tDP.removeDescriptor("normals");
+	tDP.addDescriptor("normals", newNormals);
+	shared_ptr<DP> _cloud_(new DP(tDP));
+	vCloud.push_back(_cloud_);
+    }
+    
+    //load visual map
     mvPointsPos.clear();
+    mKFPtIds.clear();
     for(int i = 0; i < NumPoints; i++)
     {
 	Eigen::Vector3d vPos;
 	points_in >> vPos[0];
 	points_in >> vPos[1];
 	points_in >> vPos[2];
+	int numObs;
+	points_in >> numObs;
+	for(int k = 0; k < numObs; k++)
+	{
+	    int mnId;
+	    points_in >> mnId;
+	    mKFPtIds[mnId].push_back(i);
+	}
 	mvPointsPos.push_back(vPos);
     }
     points_in.close();
     
-    mvKFItems.clear();
+    mKFItems.clear();
     ifstream kfs_in;
     for(int i = 0; i < NumKFs; i++)
     {
 	ss.str("");
-	ss << str.c_str() << "/kf_" << std::setfill ('0') << std::setw (5) << i << ".txt";
+	ss << str.c_str() << "/kf/kf_" << std::setfill ('0') << std::setw (5) << i << ".txt";
 
 	kfs_in.open(ss.str().c_str());
+	
+	int mnId;
+	kfs_in >> mnId;
 	
 	KFPair kfPair;
 	
@@ -113,7 +154,10 @@ void Map::LoadMap(const string& str)
 	
 	kfPair.vBow = vBow;
 	
-	mvKFItems.push_back(kfPair);
+	std::pair<int, KFPair> tmpPair;
+	tmpPair.first = mnId;
+	tmpPair.second = kfPair;
+	mKFItems[i] = tmpPair;
 	
 	kfs_in.close();
     }

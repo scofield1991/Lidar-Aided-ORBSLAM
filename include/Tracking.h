@@ -73,6 +73,8 @@ public:
              KeyFrameDatabase* pKFDB, const string &strSettingPath, const int sensor, ConfigParam* pParams,
 	     LidarMap* pLidarMap, KeyFrameDatabase* pMapDB);
     
+    void WithMapInitialization();
+    
     // Flags for relocalization. Create new KF once bias re-computed & flag for preparation for bias re-compute
     bool mbCreateNewKFAfterReloc;
     bool mbRelocBiasPrepare;

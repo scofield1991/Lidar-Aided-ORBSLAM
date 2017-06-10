@@ -34,6 +34,9 @@ public:
     void process(shared_ptr<DP> refPointCloud,
 		 shared_ptr<DP> newPointCloud);
     
+    void process_map(shared_ptr<DP> mapPointCloud,
+		     shared_ptr<DP> newPointCloud);
+    
     // delta measurements, position/velocity/rotation(matrix)
     inline Eigen::Vector3d getDeltaP() const    // P_k+1 = P_k + V_k*dt + R_k*a_k*dt*dt/2
     {

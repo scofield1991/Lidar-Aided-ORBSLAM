@@ -190,6 +190,7 @@ void Viewer::Run()
 	{
 	    bLoadMap = true;
 	    mpMapDrawer->mpMap->LoadMap("/home/doom/indoor_map");
+	    mpMapDrawer->mpMap->setGlobalMapUpdated(true);
 	    menuLoad = false;
 	}
 
