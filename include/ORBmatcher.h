@@ -30,12 +30,17 @@
 #include"KeyFrame.h"
 #include"Frame.h"
 
+#include "Converter.h"
+
 
 namespace ORB_SLAM2
 {
 
 class ORBmatcher
 {    
+public:
+    int SearchByMapProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, const float th=3);
+    
 public:
 
     ORBmatcher(float nnratio=0.6, bool checkOri=true);

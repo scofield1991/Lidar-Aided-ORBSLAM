@@ -88,7 +88,9 @@ void Map::LoadMap(const string& str)
     
     //load visual map
     mvPointsPos.clear();
+    vFeatureDescriptros.clear();
     mKFPtIds.clear();
+    ifstream desIn;
     for(int i = 0; i < NumPoints; i++)
     {
 	Eigen::Vector3d vPos;
@@ -104,6 +106,19 @@ void Map::LoadMap(const string& str)
 	    mKFPtIds[mnId].push_back(i);
 	}
 	mvPointsPos.push_back(vPos);
+	ss.str("");
+	ss << str.c_str() << "/visual_map/des_" << std::setfill ('0') << std::setw (5) << i << ".txt";
+	desIn.open(ss.str().c_str());
+	int numRows, numCols;
+	desIn >> numRows >> numCols;
+	cv::Mat mDes = cv::Mat(1, 32, CV_8U);
+	for(int r = 0; r < numRows; r++)
+	{
+	    int temp;
+	    for(int c = 0; c < numCols; c++)
+	    {desIn >> temp; mDes.at<unsigned char>(r, c) = temp;}
+	}
+	vFeatureDescriptros.push_back(mDes);
     }
     points_in.close();
     

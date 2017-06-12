@@ -102,6 +102,7 @@ public:
     shared_ptr<DP> _cloud;
     
     std::vector<Eigen::Vector3d> mvPointsPos;
+    std::vector<cv::Mat> vFeatureDescriptros;
     
     //id, mnId, KF
     std::map<int, std::pair<int, KFPair>> mKFItems;

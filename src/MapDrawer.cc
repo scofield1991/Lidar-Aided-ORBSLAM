@@ -337,6 +337,33 @@ void MapDrawer::SaveMap()
 	    }
 	    f << endl;
 	}
+	f.close();
+	
+	//------------------ Save Descriptor --------------------
+	//-------------------------------------------------------
+	stringstream ss;
+	for(size_t i=0, iend=index.size(); i<iend;i++)
+	{
+	    cout << "saving " << i << "th Descriptor" << endl;
+	    cv::Mat mDes = vpMPs[index[i]]->GetDescriptor();
+	    ss.str("");
+	    ss << "/home/doom/indoor_map/visual_map/des_";
+	    ss << std::setfill ('0') << std::setw (5) << i << ".txt";
+	    f.open(ss.str().c_str());
+	    f << fixed;
+	    f << mDes.rows << " " << mDes.cols << endl;
+	    cout << mDes << endl;
+	    for(int r = 0; r < mDes.rows; r++)
+	    {
+		for(int c = 0; c < mDes.cols; c++)
+		{
+// 		    cout << mDes.at<uchar>(r, c) << endl;
+		    f << (int)mDes.at<unsigned char>(r, c) << " ";
+		}
+		f << endl;
+	    }
+	    f.close();
+	}
     }
     
     {

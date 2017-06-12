@@ -277,6 +277,12 @@ void Tracking::WithMapInitialization()
 	vector<int> pIdList = mpMap->mKFPtIds[mnId];
 	shared_ptr<DP> lidarMap = mpMap->vCloud[selectedId];
 	
+	vector<cv::Mat> vFeatureDes;
+	for(int it:pIdList)
+	{
+	    vFeatureDes.push_back(mpMap->vFeatureDescriptros[it]);
+	}
+	
 	//ICP initialization
 	icper.reset();
 	icper.process_map(lidarMap, mCurrentFrame.pCloud);
@@ -286,15 +292,12 @@ void Tracking::WithMapInitialization()
 	NavState Twl = kfpair.Twl;
 	Twl.IncSmall(dT);
 	
-	cout << Twl.Get_RotMatrix() << endl;
-	cout << Twl.Get_P() << endl;
+	
 	
         // Set Frame pose to the origin
         mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
 	mCurrentFrame.SetNavState(Twl);
 	mCurrentFrame.UpdatePoseFromNS(ConfigParam::GetMatToc());
-	
-	cout << mCurrentFrame.mTcw << endl;
 	
         // Create KeyFrame
         KeyFrame* pKFini = new KeyFrame(mCurrentFrame,
@@ -954,7 +957,7 @@ void Tracking::Track()
                 cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
                 mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
                 mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
-                mVelocity = mCurrentFrame.mTcw*LastTwc;
+		mVelocity = mCurrentFrame.mTcw*LastTwc;
             }
             else
                 mVelocity = cv::Mat();
