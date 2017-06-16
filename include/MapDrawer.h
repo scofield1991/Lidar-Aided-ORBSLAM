@@ -66,6 +66,7 @@ public:
     void DrawMapL();
     void DrawMapV();
     void DrawMapK();
+    void DrawMapLocalL();
     
 private:
 

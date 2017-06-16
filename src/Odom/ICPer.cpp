@@ -116,7 +116,8 @@ void ICPer::process_map(std::shared_ptr< DP > mapPointCloud, std::shared_ptr< DP
     }
 
     // input filter on the new cloud
-    inputFilters.apply(*newPointCloud);
+    if(!newPointCloud->descriptorExists("normals") || newPointCloud->getDescriptorViewByName("normals").rows() > 2)
+      inputFilters.apply(*newPointCloud);
     // Ensure a minimum amount of point after filtering
     const int ptsCount = newPointCloud->features.cols();
     if(ptsCount < minPointsCount)
@@ -377,8 +378,10 @@ void ICPer::process(shared_ptr< DP > refPointCloud,
     }
 
     // input filter on the new cloud
-    inputFilters.apply(*refPointCloud);
-    inputFilters.apply(*newPointCloud);
+    if(!refPointCloud->descriptorExists("normals")/* || refPointCloud->getDescriptorViewByName("normals").rows() > 2*/)
+      inputFilters.apply(*refPointCloud);
+    if(!newPointCloud->descriptorExists("normals")/* || newPointCloud->getDescriptorViewByName("normals").rows() > 2*/)
+      inputFilters.apply(*newPointCloud);
     // Ensure a minimum amount of point after filtering
     const int ptsCount = newPointCloud->features.cols();
     if(ptsCount < minPointsCount)

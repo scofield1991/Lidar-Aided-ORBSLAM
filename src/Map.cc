@@ -90,6 +90,7 @@ void Map::LoadMap(const string& str)
     mvPointsPos.clear();
     vFeatureDescriptros.clear();
     mKFPtIds.clear();
+    mPtItems.clear();
     ifstream desIn;
     for(int i = 0; i < NumPoints; i++)
     {
@@ -105,6 +106,19 @@ void Map::LoadMap(const string& str)
 	    points_in >> mnId;
 	    mKFPtIds[mnId].push_back(i);
 	}
+	double mindis, maxdis;
+	points_in >> mindis >> maxdis;
+	double normX, normY, normZ;
+	cv::Mat norm = cv::Mat(3,1,CV_32F);
+	points_in >> normX; points_in >> normY; points_in >> normZ;
+	norm.at<float>(0,0) = normX;
+	norm.at<float>(1,0) = normY;
+	norm.at<float>(2,0) = normZ;
+	PointItem tempPti;
+	tempPti.minDis = mindis;
+	tempPti.maxDis = maxdis;
+	tempPti.normal = norm;
+	mPtItems[i] = tempPti;
 	mvPointsPos.push_back(vPos);
 	ss.str("");
 	ss << str.c_str() << "/visual_map/des_" << std::setfill ('0') << std::setw (5) << i << ".txt";
@@ -184,7 +198,7 @@ void Map::AddKeyFrame(KeyFrame *pKF)
     mspKeyFrames.insert(pKF);
     if(pKF->mnId>mnMaxKFid)
         mnMaxKFid=pKF->mnId;
-    _cloud = pKF->pCloud;
+    _local_cloud = pKF->pCloud;
 }
 
 void Map::AddMapPoint(MapPoint *pMP)

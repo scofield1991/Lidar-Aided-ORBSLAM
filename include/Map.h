@@ -54,6 +54,13 @@ struct KFPair
     DBoW2::BowVector vBow;
 };
 
+struct PointItem
+{
+    double maxDis;
+    double minDis;
+    cv::Mat normal;
+};
+
 class Map
 { 
   
@@ -100,6 +107,7 @@ public:
     std::mutex mMutexPointCreation;
     
     shared_ptr<DP> _cloud;
+    shared_ptr<DP> _local_cloud;
     
     std::vector<Eigen::Vector3d> mvPointsPos;
     std::vector<cv::Mat> vFeatureDescriptros;
@@ -111,6 +119,8 @@ public:
     std::map<int, std::vector<int>> mKFPtIds;
     
     std::vector<shared_ptr<DP>> vCloud;
+    
+    std::map<int, PointItem> mPtItems;
 
 protected:
     std::set<MapPoint*> mspMapPoints;

@@ -38,12 +38,25 @@ void LidarMap::AddKeyFrame(KeyFrame *pKF)
     newFeatures.topRows<2>() = features_.topRows<2>();
     newFeatures.bottomRows<1>().setOnes();
     newDP.features = Converter::toMatrix4f(pKF->GetNavState()) * newFeatures;
-    inputFilters.apply(newDP);
+    if(!newDP.descriptorExists("normals")/* || newDP.getDescriptorViewByName("normals").rows() > 2*/)
+      inputFilters.apply(newDP);
     if(!_cloud)
     {
 	shared_ptr<DP> cloud_(new DP(newDP));
 	_cloud = cloud_;
 	return;
+    }
+    if(_cloud->getDescriptorViewByName("normals").rows() == 2)
+    {
+	DP::View viewOnnormals = newDP.getDescriptorViewByName("normals");
+	Eigen::MatrixXf newNormals = viewOnnormals.topRows(2);
+	newDP.removeDescriptor("normals");
+	newDP.addDescriptor("normals", newNormals);
+	
+	DP::View obsDirect = newDP.getDescriptorViewByName("observationDirections");
+	Eigen::MatrixXf newobsDirect = obsDirect.topRows(2);
+	newDP.removeDescriptor("observationDirections");
+	newDP.addDescriptor("observationDirections", newobsDirect);
     }
     _cloud->concatenate(newDP);
 }

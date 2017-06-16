@@ -321,11 +321,22 @@ void MapDrawer::SaveMap()
 	{
 	    if(vpMPs[i]->isBad())
 		continue;
+	    
+	    if(vpMPs[i]->Observations() < 10)
+		continue;
+	    
+	    double minDis = vpMPs[i]->GetMinDistanceInvariance();
+	    double maxDis = vpMPs[i]->GetMaxDistanceInvariance();
+	    double diffDis = abs(maxDis - minDis);
+	    if(diffDis > 10)
+		continue;
+	    
 	    totalNum++;
 	    index.push_back(i);
 	}
 	f << vpKFs.size() << endl;
 	f << totalNum << endl;
+	// visual map points format: x y z, num_Obs, [obs_id...], mindist, maxidst, scaleFactor, ScaleLevels, [normVec]
 	for(size_t i=0, iend=index.size(); i<iend;i++)
 	{
 	    cv::Mat pos = vpMPs[index[i]]->GetWorldPos();
@@ -335,6 +346,9 @@ void MapDrawer::SaveMap()
 	    {
 		f << " " << it->first->mnId;
 	    }
+	    f << " " << vpMPs[index[i]]->GetMinDistanceInvariance() << " " << vpMPs[index[i]]->GetMaxDistanceInvariance();
+	    cv::Mat normv = vpMPs[index[i]]->GetNormal();
+	    f << " " << normv.at<float>(0,0) << " " << normv.at<float>(1,0) << " " << normv.at<float>(2,0); 
 	    f << endl;
 	}
 	f.close();
@@ -352,7 +366,6 @@ void MapDrawer::SaveMap()
 	    f.open(ss.str().c_str());
 	    f << fixed;
 	    f << mDes.rows << " " << mDes.cols << endl;
-	    cout << mDes << endl;
 	    for(int r = 0; r < mDes.rows; r++)
 	    {
 		for(int c = 0; c < mDes.cols; c++)
@@ -443,6 +456,29 @@ void MapDrawer::DrawMapL()
     
 }
 
+void MapDrawer::DrawMapLocalL()
+{
+    if(!mpMap->_local_cloud)
+      return;
+    shared_ptr<DP> tempDP = mpMap->_local_cloud;
+    
+    glPointSize(mPointSize);
+    glBegin(GL_POINTS);
+    glColor3f(1.000, 0.412, 0.706);
+    
+    for(size_t i=0, iend=tempDP->features.cols(); i<iend;i++)
+    {
+	Eigen::Vector4d Pl(tempDP->features(0,i),
+			   tempDP->features(1,i),
+			   0,
+			   1);
+	glVertex3f(Pl[0], Pl[1], Pl[2]);
+    }
+    
+    glEnd();
+    
+}
+
 void MapDrawer::DrawMapV()
 {
     vector<Eigen::Vector3d> vpPoints = mpMap->mvPointsPos;
@@ -464,23 +500,23 @@ void MapDrawer::DrawMapK()
     const float &w = mKeyFrameSize;
     const float h = w*0.75;
     const float z = w*0.6;
-    
+
     map<int, pair<int, KFPair>> mKFItems = mpMap->mKFItems;
-//     int maxindex = mpMap->getMaxIndex();
+    int maxindex = mpMap->getMaxIndex();
     for(map<int, pair<int, KFPair>>::iterator it = mKFItems.begin(), ite = mKFItems.end(); it!=ite; it++)
     {
 	KFPair kfItem = it->second.second;
 	cv::Mat kfPose = kfItem.Twc;
-	
+
 	glPushMatrix();
 
 	glMultMatrixf(kfPose.ptr<GLfloat>(0));
 
 	glLineWidth(mKeyFrameLineWidth);
-// 	if(i != maxindex)
+	if(it->first != maxindex)
 	  glColor3f(0.941, 0.502, 0.502);
-// 	else
-// 	  glColor3f(0, 1, 1);
+	else
+	  glColor3f(0, 1, 1);
 	glBegin(GL_LINES);
 	glVertex3f(0,0,0);
 	glVertex3f(w,h,z);
@@ -525,6 +561,9 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
 	  
             KeyFrame* pKF = vpKFs[i];
             cv::Mat Twc = pKF->GetPoseInverse().t();
+	    
+	    if(i == vpKFs.size() - 1)
+	      pKF->DrawLidarPoints();
 
             glPushMatrix();
 

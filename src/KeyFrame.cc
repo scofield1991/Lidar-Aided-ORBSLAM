@@ -111,7 +111,7 @@ void KeyFrame::DrawLidarPoints()
 {
     glPointSize(2);
     glBegin(GL_POINTS);
-    glColor3f(0.5,0.5,1.0);
+    glColor3f(1.000, 0.412, 0.706);
     
     for(size_t i=0, iend=pCloud->features.cols(); i<iend;i++)
     {

@@ -29,17 +29,23 @@
 #include"MapPoint.h"
 #include"KeyFrame.h"
 #include"Frame.h"
+#include "Map.h"
 
 #include "Converter.h"
 
 
 namespace ORB_SLAM2
 {
-
+class Map;
 class ORBmatcher
 {    
 public:
-    int SearchByMapProjection(Frame &F, const std::vector<MapPoint*> &vpMapPoints, const float th=3);
+    int SearchByMapProjection(Frame &F, 
+			      const std::vector<Vector3d> &vMapPoints,
+			      const std::map<int, PointItem> &mPtItem,
+			      const std::vector<cv::Mat> &vDes,
+			      std::vector<size_t> &outputPt,
+			      const float th=3);
     
 public:
 

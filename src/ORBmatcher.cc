@@ -42,19 +42,27 @@ ORBmatcher::ORBmatcher(float nnratio, bool checkOri): mfNNratio(nnratio), mbChec
 {
 }
 
-int ORBmatcher::SearchByMapProjection(Frame& F, const std::vector< Eigen::Vector3d >& vpMapPoints, const std::vector<cv::Mat>& vDes, const float th)
+int ORBmatcher::SearchByMapProjection(Frame& F, 
+				      const vector< Eigen::Vector3d >& vMapPoints, 
+				      const std::map<int, PointItem>& mPtItem, 
+				      const vector< cv::Mat >& vDes, 
+				      std::vector<size_t> &outputPt,
+				      const float th)
 {
+    outputPt.clear();
+    outputPt.reserve(F.N);
     int nmatches=0;
 
     const bool bFactor = th!=1.0;
 
-    for(size_t iMP=0; iMP<vpMapPoints.size(); iMP++)
+    for(size_t iMP=0; iMP<vMapPoints.size(); iMP++)
     {
-        Eigen::Vector3d pMP = vpMapPoints[iMP];
+        Eigen::Vector3d pMP = vMapPoints[iMP];
+	PointItem pitem = mPtItem[iMP];
 	cv::Mat mDes = vDes[iMP];
 	
 	// 3D in absolute coordinates
-	cv::Mat P = pMP;
+	cv::Mat P = Converter::toCvMat(pMP);
 
 	// 3D in camera coordinates
 	const cv::Mat Pc = F.GetRotationInverse().t()*P+F.mTcw.col(3).rowRange(0,2);
@@ -64,38 +72,67 @@ int ORBmatcher::SearchByMapProjection(Frame& F, const std::vector< Eigen::Vector
 
 	// Check positive depth
 	if(PcZ<0.0f)
-	    return false;
+	    continue;
 
-	const float fx = ;
-	const float fy = ;
-	const float cx = ;
-	const float cy = ;
+	const float fx = F.fx;
+	const float fy = F.fy;
+	const float cx = F.cx;
+	const float cy = F.cy;
 	
 	// Project in image and check it is not outside
 	const float invz = 1.0f/PcZ;
 	const float u=fx*PcX*invz+cx;
 	const float v=fy*PcY*invz+cy;
+	const float ur = u - F.mbf*invz;
 
-	if(u<mnMinX || u>mnMaxX)
-	    return false;
-	if(v<mnMinY || v>mnMaxY)
-	    return false;
+	if(u<F.mnMinX || u>F.mnMaxX)
+	    continue;
+	if(v<F.mnMinY || v>F.mnMaxY)
+	    continue;
 
-        const int &nPredictedLevel = pMP->mnTrackScaleLevel;
+	// Check distance is in the scale invariance region of the MapPoint
+	const float maxDistance = pitem.maxDis;
+	const float minDistance = pitem.minDis;
+	const cv::Mat PO = P-F.GetCameraCenter();
+	const float dist = cv::norm(PO);
+
+	if(dist > 30)
+	    continue;
+	
+	if(dist<minDistance || dist>maxDistance)
+	    continue;
+
+      // Check viewing angle
+	cv::Mat Pn = pitem.normal;
+
+	const float viewCos = PO.dot(Pn)/dist;
+
+	if(viewCos<0.5)
+	    continue;
+	
+	float ratio = maxDistance/1.2/dist;
+
+	int nScale = ceil(log(ratio)/F.mfLogScaleFactor);
+	if(nScale<0)
+	    nScale = 0;
+	else if(nScale>=F.mnScaleLevels)
+	    nScale = F.mnScaleLevels-1;
+	
+        const int &nPredictedLevel = nScale;
 
         // The size of the window will depend on the viewing direction
-        float r = RadiusByViewingCos(pMP->mTrackViewCos);
+        float r = RadiusByViewingCos(viewCos);
 
         if(bFactor)
             r*=th;
 
         const vector<size_t> vIndices =
-                F.GetFeaturesInArea(pMP->mTrackProjX,pMP->mTrackProjY,r*F.mvScaleFactors[nPredictedLevel],nPredictedLevel-1,nPredictedLevel);
+                F.GetFeaturesInArea(u,v,r*F.mvScaleFactors[nPredictedLevel],nPredictedLevel-1,nPredictedLevel);
 
         if(vIndices.empty())
             continue;
 
-        const cv::Mat MPdescriptor = pMP->GetDescriptor();
+        const cv::Mat MPdescriptor = mDes;
 
         int bestDist=256;
         int bestLevel= -1;
@@ -114,7 +151,7 @@ int ORBmatcher::SearchByMapProjection(Frame& F, const std::vector< Eigen::Vector
 
             if(F.mvuRight[idx]>0)
             {
-                const float er = fabs(pMP->mTrackProjXR-F.mvuRight[idx]);
+                const float er = fabs(ur-F.mvuRight[idx]);
                 if(er>r*F.mvScaleFactors[nPredictedLevel])
                     continue;
             }
@@ -144,7 +181,8 @@ int ORBmatcher::SearchByMapProjection(Frame& F, const std::vector< Eigen::Vector
             if(bestLevel==bestLevel2 && bestDist>mfNNratio*bestDist2)
                 continue;
 
-            F.mvpMapPoints[bestIdx]=pMP;
+//             F.mvpMapPoints[bestIdx]=pMP;
+	    outputPt[bestIdx] = iMP;
             nmatches++;
         }
     }

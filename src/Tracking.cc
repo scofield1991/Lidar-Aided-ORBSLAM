@@ -268,8 +268,10 @@ mpMapDB(pMapDB), isInitMapDB(false)
 void Tracking::WithMapInitialization()
 {
     if(mCurrentFrame.N>500)
-    { 
+    {
+	cout << "Found map model, try to reloc using it." << endl;
 	int selectedId = 350;
+	mpMap->setMaxIndex(selectedId);
 	
 	pair<int, KFPair> tempKFP = mpMap->mKFItems[selectedId];
 	int mnId = tempKFP.first;
@@ -285,17 +287,20 @@ void Tracking::WithMapInitialization()
 	
 	//ICP initialization
 	icper.reset();
-	icper.process_map(lidarMap, mCurrentFrame.pCloud);
+	icper.process(lidarMap, mCurrentFrame.pCloud);
 	NavState dT;
 	dT.Set_Pos(icper.getDeltaP());
 	dT.Set_Rot(icper.getDeltaR());
-	NavState Twl = kfpair.Twl;
+	cv::Mat Twc = kfpair.Twc.t();
+	cv::Mat Twl_cv = Twc * ConfigParam::GetMatT_co();
+	Matrix4d Twl_eig = Converter::toMatrix4f(Twl_cv).cast<double>();
+	NavState Twl = Converter::toNavState(Twl_eig);
+// 	NavState Twl = kfpair.Twl;
 	Twl.IncSmall(dT);
-	
-	
 	
         // Set Frame pose to the origin
         mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+// 	mCurrentFrame.SetPose(kfpair.Twc.inv());
 	mCurrentFrame.SetNavState(Twl);
 	mCurrentFrame.UpdatePoseFromNS(ConfigParam::GetMatToc());
 	
@@ -308,7 +313,7 @@ void Tracking::WithMapInitialization()
 	
         // Insert KeyFrame in the map
         mpMap->AddKeyFrame(pKFini);
-// 	mpLidarMap->AddKeyFrame(pKFini);
+	mpLidarMap->AddKeyFrame(pKFini);
 
         // Create MapPoints and asscoiate to KeyFrame
         for(int i=0; i<mCurrentFrame.N;i++)
@@ -329,7 +334,7 @@ void Tracking::WithMapInitialization()
         }
 
         cout << "New map created with " << mpMap->MapPointsInMap() << " points" << endl;
-// 	cout << "New Lidar Map created with " << mpLidarMap->MapPointsInMap() << " points" << endl;
+	cout << "New Lidar Map created with " << mpLidarMap->MapPointsInMap() << " points" << endl;
 
         mpLocalMapper->InsertKeyFrame(pKFini);
 
@@ -807,7 +812,7 @@ void Tracking::Track()
     {
         bMapUpdated = true;
     }
-    
+   
     if(mState==NOT_INITIALIZED)
     {
 	if(mpMap->hasGlobalMap())
@@ -837,15 +842,36 @@ void Tracking::Track()
             {
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
+		
+		//--------------Model Based Localization---------------
+		//-----------------------------------------------------
+		if(mpMap->hasGlobalMap())
+		{
+		    
+		    ORBmatcher matcher(0.7,true);
+		    vector<size_t> output_array;
+		    matcher.SearchByMapProjection(&mCurrentFrame, 
+						  mpMap->mvPointsPos, 
+						  mpMap->mPtItems,
+						  mpMap->vFeatureDescriptros,
+						  output_array,
+						  3);
+		    
+		    //TODO Visualize the model output
+		}
 
 		// 20 Frames after reloc, track with only vision
 		if(/*mbRelocBiasPrepare*/mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
 		{
+		    
 		    bOK = TrackReferenceKeyFrame();
+		    
 		}
 		else
 		{
+		    
 		    bOK = TrackWithLidar(bMapUpdated);
+		    
 		    if(!bOK)
 		    {
 			bOK = TrackReferenceKeyFrame();
@@ -860,7 +886,8 @@ void Tracking::Track()
         else
         {
 	    // Localization Mode: Local Mapping is deactivated
-	    cout << "Test Mode" << endl;
+	    cout << "FATAL, unsupport Mode" << endl;
+	    exit(1);
 	    
 // 	    if(!isInitMapDB)
 // 	    {
@@ -932,7 +959,9 @@ void Tracking::Track()
         {
             if(bOK)
 	    {
+		
 		bOK = TrackLocalMapWithLidar(bMapUpdated);
+		
             }
         }
         else
