@@ -38,7 +38,11 @@ class Tracking;
 class Viewer;
 
 class FrameDrawer
-{
+{  
+protected:
+    vector<Eigen::Vector3f> _vProjPt;
+    vector<double> _vRadius;
+  
 public:
     FrameDrawer(Map* pMap);
 

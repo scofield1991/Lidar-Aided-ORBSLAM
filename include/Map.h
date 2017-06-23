@@ -73,6 +73,14 @@ public:
     void setGlobalMapUpdated(const bool &isupdated);
     bool hasGlobalMap();
     
+    //Model based method
+    void AddModelPoint(MapPoint* pMP);
+    std::vector<MapPoint*> GetAllModelPoints();
+    long unsigned int ModelPointsInMap();
+    
+protected:
+    std::set<MapPoint*> mspModelPoints;
+    
 private:
     
     bool _updateMap;
@@ -110,7 +118,7 @@ public:
     shared_ptr<DP> _local_cloud;
     
     std::vector<Eigen::Vector3d> mvPointsPos;
-    std::vector<cv::Mat> vFeatureDescriptros;
+    std::vector<std::vector<cv::Mat>> vFeatureDescriptros;
     
     //id, mnId, KF
     std::map<int, std::pair<int, KFPair>> mKFItems;
@@ -121,6 +129,10 @@ public:
     std::vector<shared_ptr<DP>> vCloud;
     
     std::map<int, PointItem> mPtItems;
+    
+    std::vector<int> vIndexProjFrameMapPt;
+    
+    std::vector<double> vRadiuls;
 
 protected:
     std::set<MapPoint*> mspMapPoints;

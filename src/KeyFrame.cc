@@ -169,7 +169,7 @@ KeyFrame::KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB, KeyFrame* pPrev
 
     SetPose(F.mTcw);
     
-    
+    mvpModelPoints = vector<MapPoint*>(F.N, static_cast<MapPoint*>(NULL));
     
     pCloud = F.pCloud;
 }
@@ -398,6 +398,12 @@ set<MapPoint*> KeyFrame::GetMapPoints()
             s.insert(pMP);
     }
     return s;
+}
+
+std::vector< MapPoint* > KeyFrame::GetMapVector()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return mvpMapPoints;
 }
 
 int KeyFrame::TrackedMapPoints(const int &minObs)

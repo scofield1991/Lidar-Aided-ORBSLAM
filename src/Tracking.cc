@@ -160,7 +160,7 @@ Tracking::Tracking(System* pSys, ORBVocabulary* pVoc, FrameDrawer* pFrameDrawer,
 mState(NO_IMAGES_YET), mSensor(sensor), mbOnlyTracking(false), mbVO(false), mpORBVocabulary(pVoc),
 mpKeyFrameDB(pKFDB), mpInitializer(static_cast<Initializer*>(NULL)), mpSystem(pSys), mpViewer(NULL),
 mpFrameDrawer(pFrameDrawer), mpMapDrawer(pMapDrawer), mpMap(pMap), mnLastRelocFrameId(0), mpLidarMap(pLidarMap), globalOptimized(false),
-mpMapDB(pMapDB), isInitMapDB(false)
+mpMapDB(pMapDB), isInitMapDB(false), vProjPt(NULL)
 {
     mbCreateNewKFAfterReloc = false;
     mbRelocBiasPrepare = false;
@@ -270,7 +270,7 @@ void Tracking::WithMapInitialization()
     if(mCurrentFrame.N>500)
     {
 	cout << "Found map model, try to reloc using it." << endl;
-	int selectedId = 350;
+	int selectedId = 0;
 	mpMap->setMaxIndex(selectedId);
 	
 	pair<int, KFPair> tempKFP = mpMap->mKFItems[selectedId];
@@ -279,11 +279,11 @@ void Tracking::WithMapInitialization()
 	vector<int> pIdList = mpMap->mKFPtIds[mnId];
 	shared_ptr<DP> lidarMap = mpMap->vCloud[selectedId];
 	
-	vector<cv::Mat> vFeatureDes;
-	for(int it:pIdList)
-	{
-	    vFeatureDes.push_back(mpMap->vFeatureDescriptros[it]);
-	}
+// 	vector<cv::Mat> vFeatureDes;
+// 	for(int it:pIdList)
+// 	{
+// 	    vFeatureDes.push_back(mpMap->vFeatureDescriptros[it]);
+// 	}
 	
 	//ICP initialization
 	icper.reset();
@@ -296,11 +296,11 @@ void Tracking::WithMapInitialization()
 	Matrix4d Twl_eig = Converter::toMatrix4f(Twl_cv).cast<double>();
 	NavState Twl = Converter::toNavState(Twl_eig);
 // 	NavState Twl = kfpair.Twl;
-	Twl.IncSmall(dT);
+// 	Twl.IncSmall(dT);
 	
         // Set Frame pose to the origin
         mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
-// 	mCurrentFrame.SetPose(kfpair.Twc.inv());
+// 	mCurrentFrame.SetPose(kfpair.Twc);
 	mCurrentFrame.SetNavState(Twl);
 	mCurrentFrame.UpdatePoseFromNS(ConfigParam::GetMatToc());
 	
@@ -332,6 +332,18 @@ void Tracking::WithMapInitialization()
                 mCurrentFrame.mvpMapPoints[i]=pNewMP;
             }
         }
+        
+        ORBmatcher matcher;
+	int matches = matcher.SearchByModelProjection(pKFini, mpMap->GetAllModelPoints(), 3);
+	cout << "Model points searched with " << matches << " points" << endl;
+	for(int i = 0; i < pKFini->mvpModelPoints.size(); i++)
+	{
+	    MapPoint* pModelPt = pKFini->mvpModelPoints[i];
+	    if(pModelPt)
+	    {
+		pModelPt->AddObservation(pKFini, pModelPt->mnId);
+	    }
+	}
 
         cout << "New map created with " << mpMap->MapPointsInMap() << " points" << endl;
 	cout << "New Lidar Map created with " << mpLidarMap->MapPointsInMap() << " points" << endl;
@@ -366,6 +378,12 @@ bool Tracking::TrackLocalMapWithLidar(bool bMapUpdated)
     UpdateLocalMap();
 
     SearchLocalPoints();
+    
+    //FIXME test: add model points into optimization
+    if(mpMap->hasGlobalMap())
+    {
+	SearchModelPoints();
+    }
 
     // Map updated, optimize with last KeyFrame
     Optimizer::PoseOptimization(&mCurrentFrame);
@@ -842,23 +860,6 @@ void Tracking::Track()
             {
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
-		
-		//--------------Model Based Localization---------------
-		//-----------------------------------------------------
-		if(mpMap->hasGlobalMap())
-		{
-		    
-		    ORBmatcher matcher(0.7,true);
-		    vector<size_t> output_array;
-		    matcher.SearchByMapProjection(&mCurrentFrame, 
-						  mpMap->mvPointsPos, 
-						  mpMap->mPtItems,
-						  mpMap->vFeatureDescriptros,
-						  output_array,
-						  3);
-		    
-		    //TODO Visualize the model output
-		}
 
 		// 20 Frames after reloc, track with only vision
 		if(/*mbRelocBiasPrepare*/mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
@@ -877,6 +878,7 @@ void Tracking::Track()
 			bOK = TrackReferenceKeyFrame();
 		    }
 		}
+		
             }
             else
             {
@@ -974,9 +976,34 @@ void Tracking::Track()
         else
             mState=LOST;
 
+	//--------------Model Based Localization Test---------------
+	//----------------------------------------------------------
+// 	if(mpMap->hasGlobalMap())
+// 	{
+// 	    
+// 	    ORBmatcher matcher(0.7,true);
+// 	    vector<int> output_array;
+// 	    vector<Vector2f> output_PJ;
+// 	    vector<double> output_radius;
+// 	    matcher.SearchByMapProjection(mCurrentFrame, 
+// 					  mpMap->mvPointsPos, 
+// 					  mpMap->mPtItems,
+// 					  mpMap->vFeatureDescriptros,
+// 					  output_array,
+// 					  output_PJ,
+// 					  output_radius,
+// 					  5);
+// 	    
+// 	    //TODO Visualize the model output
+// // 	    cout << "Got " << output_array.size() << " outputs at this search" << endl;
+// 	    mpMap->vIndexProjFrameMapPt = output_array;
+// 	    vRadius = output_radius;
+// 	    vProjPt = output_PJ;
+// 	}
+	
         // Update drawer
         mpFrameDrawer->Update(this);
-
+	
         // If tracking were good, check if we insert a keyframe
         if(bOK)
         {
@@ -1732,6 +1759,58 @@ void Tracking::CreateNewKeyFrame()
 }
 
 void Tracking::SearchLocalPoints()
+{
+    // Do not search map points already matched
+    for(vector<MapPoint*>::iterator vit=mCurrentFrame.mvpMapPoints.begin(), vend=mCurrentFrame.mvpMapPoints.end(); vit!=vend; vit++)
+    {
+        MapPoint* pMP = *vit;
+        if(pMP)
+        {
+            if(pMP->isBad())
+            {
+                *vit = static_cast<MapPoint*>(NULL);
+            }
+            else
+            {
+                pMP->IncreaseVisible();
+                pMP->mnLastFrameSeen = mCurrentFrame.mnId;
+                pMP->mbTrackInView = false;
+            }
+        }
+    }
+
+    int nToMatch=0;
+
+    // Project points in frame and check its visibility
+    for(vector<MapPoint*>::iterator vit=mvpLocalMapPoints.begin(), vend=mvpLocalMapPoints.end(); vit!=vend; vit++)
+    {
+        MapPoint* pMP = *vit;
+        if(pMP->mnLastFrameSeen == mCurrentFrame.mnId)
+            continue;
+        if(pMP->isBad())
+            continue;
+        // Project (this fills MapPoint variables for matching)
+        if(mCurrentFrame.isInFrustum(pMP,0.5))
+        {
+            pMP->IncreaseVisible();
+            nToMatch++;
+        }
+    }
+
+    if(nToMatch>0)
+    {
+        ORBmatcher matcher(0.8);
+        int th = 1;
+        if(mSensor==System::RGBD)
+            th=3;
+        // If the camera has been relocalised recently, perform a coarser search
+        if(mCurrentFrame.mnId<mnLastRelocFrameId+2)
+            th=5;
+        matcher.SearchByProjection(mCurrentFrame,mvpLocalMapPoints,th);
+    }
+}
+
+void Tracking::SearchModelPoints()
 {
     // Do not search map points already matched
     for(vector<MapPoint*>::iterator vit=mCurrentFrame.mvpMapPoints.begin(), vend=mCurrentFrame.mvpMapPoints.end(); vit!=vend; vit++)

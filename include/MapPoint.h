@@ -39,6 +39,14 @@ class Frame;
 class MapPoint
 {
 public:
+    //Model based points
+    MapPoint(const int& id, const cv::Mat& Pos, const float maxDis, const float minDis, const cv::Mat& normVect, const vector< cv::Mat >& vDes, ORB_SLAM2::Map* pMap);
+  
+    vector<cv::Mat> mvDescriptors;
+    
+    void ComputeModelDescriptors();
+  
+public:
     MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);
     MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF);
 

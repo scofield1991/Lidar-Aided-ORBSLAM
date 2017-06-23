@@ -19,6 +19,7 @@
 */
 
 #include "Map.h"
+#include <MapPoint.h>
 
 #include<mutex>
 
@@ -32,6 +33,24 @@ bool KFIdComapre::operator ()(const KeyFrame* kfleft,const KeyFrame* kfright) co
   
 Map::Map():mnMaxKFid(0),maxindex(0),_updateMap(false)
 {
+}
+
+void Map::AddModelPoint(MapPoint* pMP)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mspModelPoints.insert(pMP);
+}
+
+std::vector< MapPoint* > Map::GetAllModelPoints()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return vector<MapPoint*>(mspModelPoints.begin(),mspModelPoints.end());
+}
+
+long unsigned int Map::ModelPointsInMap()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mspModelPoints.size();
 }
 
 void Map::setGlobalMapUpdated(const bool& isupdated)
@@ -123,17 +142,29 @@ void Map::LoadMap(const string& str)
 	ss.str("");
 	ss << str.c_str() << "/visual_map/des_" << std::setfill ('0') << std::setw (5) << i << ".txt";
 	desIn.open(ss.str().c_str());
-	int numRows, numCols;
-	desIn >> numRows >> numCols;
-	cv::Mat mDes = cv::Mat(1, 32, CV_8U);
-	for(int r = 0; r < numRows; r++)
+	int numDes, numRows, numCols;
+	desIn >> numDes >> numRows >> numCols;
+	vector<cv::Mat> vDes;
+	for(int numd = 0; numd < numDes; numd++)
 	{
-	    int temp;
-	    for(int c = 0; c < numCols; c++)
-	    {desIn >> temp; mDes.at<unsigned char>(r, c) = temp;}
+	    cv::Mat mDes = cv::Mat(1, 32, CV_8U);
+	    for(int r = 0; r < numRows; r++)
+	    {
+		int temp;
+		for(int c = 0; c < numCols; c++)
+		{desIn >> temp; mDes.at<unsigned char>(r, c) = temp;}
+	    }
+	    vDes.push_back(mDes);
 	}
-	vFeatureDescriptros.push_back(mDes);
+	vFeatureDescriptros.push_back(vDes);
+	
+	//Add Model Point
+	cv::Mat x3D = Converter::toCvMat(vPos);
+	MapPoint* pMP = new MapPoint(i, x3D, mindis, maxdis, norm, vDes, this);
+
+	this->AddModelPoint(pMP);
     }
+    cout << "There are " << this->ModelPointsInMap() << " " << MapPoint::nNextId << " model points in map." << endl;
     points_in.close();
     
     mKFItems.clear();

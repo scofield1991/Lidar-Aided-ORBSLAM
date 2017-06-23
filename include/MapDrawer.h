@@ -67,6 +67,7 @@ public:
     void DrawMapV();
     void DrawMapK();
     void DrawMapLocalL();
+    void DrawRay(pangolin::OpenGlMatrix &Twc);
     
 private:
 

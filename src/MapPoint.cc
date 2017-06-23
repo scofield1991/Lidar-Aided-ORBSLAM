@@ -29,6 +29,64 @@ namespace ORB_SLAM2
 long unsigned int MapPoint::nNextId=0;
 mutex MapPoint::mGlobalMutex;
 
+MapPoint::MapPoint(const int& id, const cv::Mat& Pos, const float maxDis, const float minDis, const cv::Mat& normVect, const vector< cv::Mat >& vDes, ORB_SLAM2::Map* pMap):
+    mnFirstKFid(-1), mnFirstFrame(-1), nObs(0), mnTrackReferenceForFrame(0),
+    mnLastFrameSeen(0), mnBALocalForKF(0), mnFuseCandidateForKF(0), mnLoopPointForKF(0), mnCorrectedByKF(0),
+    mnCorrectedReference(0), mnBAGlobalForKF(0), mpRefKF(static_cast<KeyFrame*>(NULL)), mnVisible(1), mnFound(1), mbBad(false),
+    mpReplaced(static_cast<MapPoint*>(NULL)), mfMinDistance(minDis), mfMaxDistance(maxDis), mpMap(pMap)
+{
+    Pos.copyTo(mWorldPos);
+    
+    normVect.copyTo(mNormalVector);
+    
+    // MapPoints can be created from Tracking and Local Mapping. This mutex avoid conflicts with id.
+    unique_lock<mutex> lock(mpMap->mMutexPointCreation);
+    mnId = id;
+    nNextId = id;
+    
+    mvDescriptors = vDes;
+    ComputeModelDescriptors();
+}
+
+void MapPoint::ComputeModelDescriptors()
+{
+    // Compute distances between them
+    const size_t N = mvDescriptors.size();
+
+    float Distances[N][N];
+    for(size_t i=0;i<N;i++)
+    {
+        Distances[i][i]=0;
+        for(size_t j=i+1;j<N;j++)
+        {
+            int distij = ORBmatcher::DescriptorDistance(mvDescriptors[i],mvDescriptors[j]);
+            Distances[i][j]=distij;
+            Distances[j][i]=distij;
+        }
+    }
+
+    // Take the descriptor with least median distance to the rest
+    int BestMedian = INT_MAX;
+    int BestIdx = 0;
+    for(size_t i=0;i<N;i++)
+    {
+        vector<int> vDists(Distances[i],Distances[i]+N);
+        sort(vDists.begin(),vDists.end());
+        int median = vDists[0.5*(N-1)];
+
+        if(median<BestMedian)
+        {
+            BestMedian = median;
+            BestIdx = i;
+        }
+    }
+
+    {
+        unique_lock<mutex> lock(mMutexFeatures);
+        mDescriptor = mvDescriptors[BestIdx].clone();
+    }
+}
+
 MapPoint::MapPoint(const cv::Mat &Pos, KeyFrame *pRefKF, Map* pMap):
     mnFirstKFid(pRefKF->mnId), mnFirstFrame(pRefKF->mnFrameId), nObs(0), mnTrackReferenceForFrame(0),
     mnLastFrameSeen(0), mnBALocalForKF(0), mnFuseCandidateForKF(0), mnLoopPointForKF(0), mnCorrectedByKF(0),
@@ -243,6 +301,7 @@ void MapPoint::ComputeDistinctiveDescriptors()
 {
     // Retrieve all observed descriptors
     vector<cv::Mat> vDescriptors;
+    mvDescriptors.clear();
 
     map<KeyFrame*,size_t> observations;
 
@@ -268,6 +327,8 @@ void MapPoint::ComputeDistinctiveDescriptors()
 
     if(vDescriptors.empty())
         return;
+    
+    mvDescriptors = vDescriptors;
 
     // Compute distances between them
     const size_t N = vDescriptors.size();

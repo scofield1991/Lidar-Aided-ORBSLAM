@@ -33,6 +33,7 @@
 
 #include "Converter.h"
 
+// #define TEST_PROJ
 
 namespace ORB_SLAM2
 {
@@ -41,11 +42,22 @@ class ORBmatcher
 {    
 public:
     int SearchByMapProjection(Frame &F, 
-			      const std::vector<Vector3d> &vMapPoints,
-			      const std::map<int, PointItem> &mPtItem,
-			      const std::vector<cv::Mat> &vDes,
-			      std::vector<size_t> &outputPt,
+			      std::vector<Vector3d> &vMapPoints,
+			      std::map<int, PointItem> &mPtItem,
+			      std::vector<std::vector<cv::Mat>> &vvDes,
+			      std::vector<int> &outputPt,
+			      std::vector<Vector3f> &outputPJ,
+			      std::vector<double> &vRadius,
 			      const float th=3);
+    
+    int SearchByModelCovisibile(Frame &F, 
+				std::vector<Vector3d> &vMapPoints,
+				std::map<int, PointItem> &mPtItem,
+				std::vector<int> &outputPt);
+    
+    int SearchByModelProjection(KeyFrame* pKF,
+				const std::vector<MapPoint*> &vpPoints,
+				int th);
     
 public:
 

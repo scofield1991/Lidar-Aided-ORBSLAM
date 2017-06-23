@@ -80,6 +80,11 @@ public:
     
     void DrawLidarPoints();
     
+    vector<MapPoint*> GetMapVector();
+    
+    //Model based method
+    vector<MapPoint*> mvpModelPoints;
+    
 protected:
 
     std::mutex mMutexPrevKF;

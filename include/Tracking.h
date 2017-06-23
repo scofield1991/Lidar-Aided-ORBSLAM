@@ -96,6 +96,12 @@ public:
 				 const double &timestamp);
     
     void DrawCurrentLidarPoints();
+    
+    // The function and members below are w.r.t. the model based method
+    vector<Eigen::Vector3f> vProjPt;
+    vector<double> vRadius;
+    vector<int> vIndexProj;
+    void SearchModelPoints();
 
 private:
     

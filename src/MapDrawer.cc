@@ -358,23 +358,33 @@ void MapDrawer::SaveMap()
 	stringstream ss;
 	for(size_t i=0, iend=index.size(); i<iend;i++)
 	{
-	    cout << "saving " << i << "th Descriptor" << endl;
-	    cv::Mat mDes = vpMPs[index[i]]->GetDescriptor();
+	    cout << "saving " << i << "th Descriptor vector" << endl;
+// 	    cv::Mat mDes = vpMPs[index[i]]->GetDescriptor();
+	    vector<cv::Mat> vDes = vpMPs[index[i]]->mvDescriptors;
 	    ss.str("");
 	    ss << "/home/doom/indoor_map/visual_map/des_";
 	    ss << std::setfill ('0') << std::setw (5) << i << ".txt";
 	    f.open(ss.str().c_str());
 	    f << fixed;
-	    f << mDes.rows << " " << mDes.cols << endl;
-	    for(int r = 0; r < mDes.rows; r++)
+	    
+	    f << vDes.size() << endl;
+	    for(int j = 0; j < vDes.size(); j++)
 	    {
-		for(int c = 0; c < mDes.cols; c++)
+		cv::Mat mDes = vDes[j];
+	    
+		if(j == 0)
+		  f << mDes.rows << " " << mDes.cols << endl;
+		for(int r = 0; r < mDes.rows; r++)
 		{
-// 		    cout << mDes.at<uchar>(r, c) << endl;
-		    f << (int)mDes.at<unsigned char>(r, c) << " ";
+		    for(int c = 0; c < mDes.cols; c++)
+		    {
+    // 		    cout << mDes.at<uchar>(r, c) << endl;
+			f << (int)mDes.at<unsigned char>(r, c) << " ";
+		    }
+		    f << endl;
 		}
-		f << endl;
 	    }
+	    
 	    f.close();
 	}
     }
@@ -546,6 +556,28 @@ void MapDrawer::DrawMapK()
     glEnd();
 }
 
+void MapDrawer::DrawRay(pangolin::OpenGlMatrix &Twc)
+{
+    glLineWidth(mGraphLineWidth);
+    glColor4f(1.000, 0.843, 0.000,0.6f);
+    glBegin(GL_LINES);
+    
+    float x = Twc.m[12], y = Twc.m[13], z = Twc.m[14];
+    vector<Eigen::Vector3d> vPtPos = mpMap->mvPointsPos;
+    vector<int> vIndex = mpMap->vIndexProjFrameMapPt;
+    for(size_t i=0; i < vIndex.size(); i++)
+    {
+	if(vIndex[i] == -1)
+	  continue;
+	Eigen::Vector3d pt = vPtPos[vIndex[i]];
+	glVertex3f(x, y, z);
+	glVertex3f(pt[0], pt[1], pt[2]);
+    }
+//     cout << endl;
+    
+    glEnd();
+}
+
 void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
 {
     const float &w = mKeyFrameSize;
@@ -643,6 +675,32 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
         }
 
         glEnd();
+    }
+    
+    if(mpMap->hasGlobalMap())
+    {
+	glLineWidth(mGraphLineWidth);
+        glColor4f(1.000, 0.843, 0.000,0.6f);
+        glBegin(GL_LINES);
+      
+	for(size_t i=0; i<vpKFs.size(); i++)
+        {
+	    KeyFrame* pKF = vpKFs[i];
+	    cv::Mat Ow = pKF->GetCameraCenter();
+	    
+	    vector<MapPoint*> vModelPt = pKF->mvpModelPoints;
+	    for(MapPoint* it:vModelPt)
+	    {
+		if(!it)
+		  continue;
+		cv::Mat mPos = it->GetWorldPos();
+		cout << "mPos " << mPos << "|";
+		glVertex3f(Ow.at<float>(0),Ow.at<float>(1),Ow.at<float>(2));
+                glVertex3f(mPos.at<float>(0),mPos.at<float>(1),mPos.at<float>(2));
+	    }
+	}
+	cout << endl;
+	glEnd();
     }
 }
 

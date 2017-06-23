@@ -488,28 +488,31 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const f
     const int nMinCellX = max(0,(int)floor((x-mnMinX-r)*mfGridElementWidthInv));
     if(nMinCellX>=FRAME_GRID_COLS)
         return vIndices;
-
+    
     const int nMaxCellX = min((int)FRAME_GRID_COLS-1,(int)ceil((x-mnMinX+r)*mfGridElementWidthInv));
     if(nMaxCellX<0)
         return vIndices;
-
+    
     const int nMinCellY = max(0,(int)floor((y-mnMinY-r)*mfGridElementHeightInv));
     if(nMinCellY>=FRAME_GRID_ROWS)
         return vIndices;
-
+    
     const int nMaxCellY = min((int)FRAME_GRID_ROWS-1,(int)ceil((y-mnMinY+r)*mfGridElementHeightInv));
     if(nMaxCellY<0)
         return vIndices;
-
+    
     const bool bCheckLevels = (minLevel>0) || (maxLevel>=0);
-
+    
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
             const vector<size_t> vCell = mGrid[ix][iy];
             if(vCell.empty())
+	    {
+// 		cout << "no cells got" << endl;
                 continue;
+	    }
 
             for(size_t j=0, jend=vCell.size(); j<jend; j++)
             {
@@ -517,10 +520,16 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const f
                 if(bCheckLevels)
                 {
                     if(kpUn.octave<minLevel)
+		    {
+// 			cout << "octave is less than minlevel" << endl;
                         continue;
+		    }
                     if(maxLevel>=0)
                         if(kpUn.octave>maxLevel)
+			{
+// 			    cout << "octave is more than maxlevel" << endl;
                             continue;
+			}
                 }
 
                 const float distx = kpUn.pt.x-x;
@@ -528,6 +537,8 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const f
 
                 if(fabs(distx)<r && fabs(disty)<r)
                     vIndices.push_back(vCell[j]);
+// 		else
+// 		    cout << "out of r" << endl;
             }
         }
     }

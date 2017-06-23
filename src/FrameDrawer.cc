@@ -47,6 +47,9 @@ cv::Mat FrameDrawer::DrawFrame()
     vector<bool> vbVO, vbMap; // Tracked MapPoints in current frame
     int state; // Tracking state
 
+    vector<Eigen::Vector3f> vCurProjPt;
+    vector<double> vCurRadius;
+    
     //Copy variables within scoped mutex
     {
         unique_lock<mutex> lock(mMutex);
@@ -55,7 +58,10 @@ cv::Mat FrameDrawer::DrawFrame()
             mState=Tracking::NO_IMAGES_YET;
 
         mIm.copyTo(im);
-
+	
+	vCurProjPt = _vProjPt;
+	vCurRadius = _vRadius;
+	
         if(mState==Tracking::NOT_INITIALIZED)
         {
             vCurrentKeys = mvCurrentKeys;
@@ -119,6 +125,38 @@ cv::Mat FrameDrawer::DrawFrame()
                 }
             }
         }
+        
+        for(int i = 0; i < vCurProjPt.size(); i++)
+	{
+	    cv::Point pointInterest;
+	    pointInterest.x = vCurProjPt[i][0];
+	    pointInterest.y = vCurProjPt[i][1];
+	    cv::circle(im, pointInterest, 1, cv::Scalar(34, 34, 178), 2);
+	    if(vCurRadius[i] != -1)
+	    {
+	      
+	      cv::Point2f pt1,pt2;
+              pt1.x=vCurrentKeys[i].pt.x-r;
+              pt1.y=vCurrentKeys[i].pt.y-r;
+              pt2.x=vCurrentKeys[i].pt.x+r;
+              pt2.y=vCurrentKeys[i].pt.y+r;
+	      
+	      cv::Point2f c1,c2;
+              c1.x=pointInterest.x-vCurRadius[i];
+              c1.y=pointInterest.y-vCurRadius[i];
+              c2.x=pointInterest.x+vCurRadius[i];
+              c2.y=pointInterest.y+vCurRadius[i];
+	      
+// 	      cv::circle(im, pointInterest, vCurRadius[i], cv::Scalar(34, 34, 178), 2);
+	      cv::rectangle(im,c1,c2,cv::Scalar(34, 34, 178));
+	      if(!vbMap[i])
+              {
+		cv::rectangle(im,pt1,pt2,cv::Scalar(255,0,0));
+		cv::circle(im,vCurrentKeys[i].pt,2,cv::Scalar(255,0,0),-1);
+	      }
+	      cv::line(im, pointInterest, vCurrentKeys[i].pt, cv::Scalar(34, 34, 178));
+	    }
+	}
     }
 
     cv::Mat imWithInfo;
@@ -177,8 +215,14 @@ void FrameDrawer::Update(Tracking *pTracker)
     mvbVO = vector<bool>(N,false);
     mvbMap = vector<bool>(N,false);
     mbOnlyTracking = pTracker->mbOnlyTracking;
-
-
+    if(!pTracker->vProjPt.empty())
+    {
+      _vProjPt.clear();
+      _vProjPt = pTracker->vProjPt;
+      _vRadius.clear();
+      _vRadius = pTracker->vRadius;
+    }
+      
     if(pTracker->mLastProcessedState==Tracking::NOT_INITIALIZED)
     {
         mvIniKeys=pTracker->mInitialFrame.mvKeys;
