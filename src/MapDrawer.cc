@@ -453,8 +453,8 @@ void MapDrawer::SaveMap()
 		{
 		    f << fit->second[i] << " ";
 		}
+		f << endl;
 	    }
-	    f << endl;
 	    
 	    //save map points
 	    const vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
