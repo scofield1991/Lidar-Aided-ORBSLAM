@@ -354,12 +354,19 @@ int ORBmatcher::SearchByModelProjection(KeyFrame* pKF, const std::vector< MapPoi
 
     // Set of MapPoints already found in the KeyFrame
     vector<MapPoint*> vMapPts = pKF->GetMapVector();
-    vector<MapPoint*> vModelPts = pKF->mvpModelPoints;
+//     vector<MapPoint*> vModelPts = pKF->mvpModelPoints;
 //     set<MapPoint*> spAlreadyFound(vpMatched.begin(), vpMatched.end());
 //     spAlreadyFound.erase(static_cast<MapPoint*>(NULL));
 
     int nmatches=0;
-
+    
+    struct ProjectItem{
+	int id;
+	float dist;
+	float u;
+	float v;
+    };
+    vector<ProjectItem> vCandModelPts;
     // For each Candidate MapPoint Project and Match
     for(int iMP=0, iendMP=vpPoints.size(); iMP<iendMP; iMP++)
     {
@@ -397,6 +404,9 @@ int ORBmatcher::SearchByModelProjection(KeyFrame* pKF, const std::vector< MapPoi
         cv::Mat PO = p3Dw-Ow;
         const float dist = cv::norm(PO);
 
+	if(dist > 5)
+	  continue;
+	
 //         if(dist<minDistance || dist>maxDistance)
 //             continue;
 
@@ -405,50 +415,83 @@ int ORBmatcher::SearchByModelProjection(KeyFrame* pKF, const std::vector< MapPoi
 
         if(PO.dot(Pn)<0.5*dist)
             continue;
+	
+	ProjectItem temp;
+	temp.dist = dist;
+	temp.id = iMP;
+	temp.u = u;
+	temp.v = v;
+	vCandModelPts.push_back(temp);
+    }
+    
+    if(vCandModelPts.empty())
+	return nmatches;
+    
+    for(int i = 0; i < pKF->mvKeysUn.size(); i++)
+    {
+	const cv::KeyPoint &kpUn = pKF->mvKeysUn[i];
+      
+	int bestDist = 256;
+	int bestDist2 = 256;
+	int bestIdx = -1;
+	
+	for(auto it:vCandModelPts)
+	{
+	    ProjectItem tempItem = it;
+	    MapPoint* pMP = vpPoints[tempItem.id];
+	    
+	    int nPredictedLevel = pMP->PredictScale(tempItem.dist,pKF);
 
-        int nPredictedLevel = pMP->PredictScale(dist,pKF);
+	    // Search in a radius
+	    const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
 
-        // Search in a radius
-        const float radius = th*pKF->mvScaleFactors[nPredictedLevel];
+//	    const vector<size_t> vIndices = pKF->GetFeaturesInArea(tempItem.u,tempItem.v,radius);
+	    
+// 	    if(vIndices.empty())
+// 		continue;
 
-        const vector<size_t> vIndices = pKF->GetFeaturesInArea(u,v,radius);
+	    const float distx = kpUn.pt.x-tempItem.u;
+	    const float disty = kpUn.pt.y-tempItem.v;
 
-        if(vIndices.empty())
-            continue;
+	    if(fabs(distx)>radius && fabs(disty)>radius)
+		continue;
 
-        // Match to the most similar keypoint in the radius
-        const cv::Mat dMP = pMP->GetDescriptor();
+	    // Match to the most similar keypoint in the radius
+	    const cv::Mat dMP = pMP->GetDescriptor();
+	    
 
-        int bestDist = 256;
-        int bestIdx = -1;
-        for(vector<size_t>::const_iterator vit=vIndices.begin(), vend=vIndices.end(); vit!=vend; vit++)
-        {
-            const size_t idx = *vit;
-            if(vMapPts[idx])
-                continue;
+	    if(vMapPts[i])
+		continue;
 
-            const int &kpLevel= pKF->mvKeysUn[idx].octave;
+	    const int &kpLevel= pKF->mvKeysUn[i].octave;
 
-            if(kpLevel<nPredictedLevel-1 || kpLevel>nPredictedLevel)
-                continue;
+	    if(kpLevel<nPredictedLevel-1 || kpLevel>nPredictedLevel)
+		continue;
 
-            const cv::Mat &dKF = pKF->mDescriptors.row(idx);
+	    const cv::Mat &dKF = pKF->mDescriptors.row(i);
 
-            const int dist = DescriptorDistance(dMP,dKF);
+	    const int dist = DescriptorDistance(dMP,dKF);
 
-            if(dist<bestDist)
+	    if(dist<bestDist)
             {
-                bestDist = dist;
-                bestIdx = idx;
+                bestDist2=bestDist;
+                bestDist=dist;
+                bestIdx=tempItem.id;
             }
-        }
-
-        if(bestDist<=120)
-        {
-            vModelPts[bestIdx]=pMP;
-            nmatches++;
-        }
-
+            else if(dist<bestDist2)
+            {
+                bestDist2=dist;
+            }
+	}
+	
+	if(bestDist<=120)
+	{
+	    if(bestDist>mfNNratio*bestDist2)
+		continue;
+	  
+	    pKF->mvpModelPoints[i] = vpPoints[bestIdx];
+	    nmatches++;
+	}
     }
 
     return nmatches;

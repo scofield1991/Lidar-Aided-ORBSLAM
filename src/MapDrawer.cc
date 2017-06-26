@@ -578,7 +578,7 @@ void MapDrawer::DrawRay(pangolin::OpenGlMatrix &Twc)
     glEnd();
 }
 
-void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
+void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph, const bool bDrawModel)
 {
     const float &w = mKeyFrameSize;
     const float h = w*0.75;
@@ -677,7 +677,7 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
         glEnd();
     }
     
-    if(mpMap->hasGlobalMap())
+    if(mpMap->hasGlobalMap() && bDrawModel)
     {
 	glLineWidth(mGraphLineWidth);
         glColor4f(1.000, 0.843, 0.000,0.6f);
@@ -694,12 +694,10 @@ void MapDrawer::DrawKeyFrames(const bool bDrawKF, const bool bDrawGraph)
 		if(!it)
 		  continue;
 		cv::Mat mPos = it->GetWorldPos();
-		cout << "mPos " << mPos << "|";
 		glVertex3f(Ow.at<float>(0),Ow.at<float>(1),Ow.at<float>(2));
                 glVertex3f(mPos.at<float>(0),mPos.at<float>(1),mPos.at<float>(2));
 	    }
 	}
-	cout << endl;
 	glEnd();
     }
 }

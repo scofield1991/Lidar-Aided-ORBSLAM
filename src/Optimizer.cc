@@ -1058,6 +1058,25 @@ void Optimizer::LocalBundleAdjustmentNavState(KeyFrame *pKF, ICPer &icper,
                     }
         }
     }
+    
+    //Model Points 
+    list<MapPoint*> lModelPoints;
+    for(list<KeyFrame*>::const_iterator lit=lLocalKeyFrames.begin() , lend=lLocalKeyFrames.end(); lit!=lend; lit++)
+    {
+        vector<MapPoint*> vpMPs = (*lit)->mvpModelPoints;
+        for(vector<MapPoint*>::iterator vit=vpMPs.begin(), vend=vpMPs.end(); vit!=vend; vit++)
+        {
+            MapPoint* pMP = *vit;
+	    if(pMP)
+	    {
+		if(pMP->mnBALocalForKF!=pKF->mnId)
+		{
+		    lModelPoints.push_back(pMP);
+		    pMP->mnBALocalForKF=pKF->mnId;
+		}
+	    }
+        }
+    }
 
     // Fixed Keyframes. Keyframes that see Local MapPoints but that are not Local Keyframes
     list<KeyFrame*> lFixedCameras;
@@ -1185,16 +1204,25 @@ void Optimizer::LocalBundleAdjustmentNavState(KeyFrame *pKF, ICPer &icper,
     }
     
     // Set MapPoint vertices
-    const int nExpectedSize = (lLocalKeyFrames.size()+lFixedCameras.size())*lLocalMapPoints.size();
+    const int nExpectedSize = (lLocalKeyFrames.size()+lFixedCameras.size())*(lLocalMapPoints.size()+lModelPoints.size());
 
     vector<g2o::EdgeNavStatePRStereoPointXYZ*> vpEdgesStereo;
     vpEdgesStereo.reserve(nExpectedSize);
+    
+    vector<g2o::EdgeNavStatePRStereoPointXYZ*> vpEdgesModelStereo;
+    vpEdgesModelStereo.reserve(nExpectedSize);
 
     vector<KeyFrame*> vpEdgeKFStereo;
     vpEdgeKFStereo.reserve(nExpectedSize);
+    
+    vector<KeyFrame*> vpEdgeKFModelStereo;
+    vpEdgeKFModelStereo.reserve(nExpectedSize);
 
     vector<MapPoint*> vpMapPointEdgeStereo;
     vpMapPointEdgeStereo.reserve(nExpectedSize);
+    
+    vector<MapPoint*> vpModelPointEdgeStereo;
+    vpModelPointEdgeStereo.reserve(nExpectedSize);
 
 //     const float thHuberMono = sqrt(5.991);
     const float thHuberStereo = sqrt(7.8147);
@@ -1256,6 +1284,66 @@ void Optimizer::LocalBundleAdjustmentNavState(KeyFrame *pKF, ICPer &icper,
             }
         }
     }
+    
+    //Model Based Method
+    for(list<MapPoint*>::iterator lit=lModelPoints.begin(), lend=lModelPoints.end(); lit!=lend; lit++)
+    {
+        MapPoint* pMP = *lit;
+        g2o::VertexSBAPointXYZ* vPoint = new g2o::VertexSBAPointXYZ();
+        vPoint->setEstimate(Converter::toVector3d(pMP->GetWorldPos()));
+        int id = pMP->mnId+maxKFid+1;
+        vPoint->setId(id);
+        vPoint->setMarginalized(true);
+	vPoint->setFixed(true);// Special for Model Points
+        optimizer.addVertex(vPoint);
+
+        const map<KeyFrame*,size_t> observations = pMP->GetObservations();
+
+        // Set edges between KeyFrame and Model Points
+        for(map<KeyFrame*,size_t>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)
+        {
+            KeyFrame* pKFi = mit->first;
+
+            if(!pKFi->isBad())
+            {
+                const cv::KeyPoint &kpUn = pKFi->mvKeysUn[mit->second];
+		const float &kp_ur = pKFi->mvuRight[mit->second];
+
+                // Monocular observation
+                if(pKFi->mvuRight[mit->second]<0)
+                {
+                }
+                else
+                {
+
+		    //SET EDGE
+		    Eigen::Matrix<double,3,1> obs;
+		    obs << kpUn.pt.x, kpUn.pt.y, kp_ur;
+
+		    g2o::EdgeNavStatePRStereoPointXYZ* e = new g2o::EdgeNavStatePRStereoPointXYZ();
+
+		    e->setVertex(0, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(id)));
+		    e->setVertex(1, dynamic_cast<g2o::OptimizableGraph::Vertex*>(optimizer.vertex(2*pKFi->mnId)));
+		    e->setMeasurement(obs);
+		    const float invSigma2 = pKFi->mvInvLevelSigma2[kpUn.octave];
+		    Eigen::Matrix3d Info = Eigen::Matrix3d::Identity()*invSigma2;
+		    e->setInformation(Info);
+		    
+		    g2o::RobustKernelHuber* rk = new g2o::RobustKernelHuber;
+		    e->setRobustKernel(rk);
+		    rk->setDelta(thHuberStereo);
+
+		    e->SetParams(pKFi->fx,pKFi->fy,pKFi->cx,pKFi->cy,pKFi->mbf,Roc,Poc);
+
+		    optimizer.addEdge(e);
+
+		    vpEdgesModelStereo.push_back(e);
+		    vpEdgeKFModelStereo.push_back(pKFi);
+		    vpModelPointEdgeStereo.push_back(pMP);
+                }
+            }
+        }
+    }
 
     if(pbStopFlag)
         if(*pbStopFlag)
@@ -1282,6 +1370,22 @@ void Optimizer::LocalBundleAdjustmentNavState(KeyFrame *pKF, ICPer &icper,
 
         if(pMP->isBad())
             continue;
+
+        if(e->chi2()>7.8147 || !e->isDepthPositive())
+        {
+            e->setLevel(1);
+        }
+
+        e->setRobustKernel(0);
+    }
+    
+    for(size_t i=0, iend=vpEdgesModelStereo.size(); i<iend;i++)
+    {
+        g2o::EdgeNavStatePRStereoPointXYZ* e = vpEdgesModelStereo[i];
+        MapPoint* pMP = vpModelPointEdgeStereo[i];
+
+//         if(pMP->isBad())
+//             continue;
 
         if(e->chi2()>7.8147 || !e->isDepthPositive())
         {

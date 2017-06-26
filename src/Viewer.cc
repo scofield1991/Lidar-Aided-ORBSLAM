@@ -72,6 +72,7 @@ void Viewer::Run()
     pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
     pangolin::Var<bool> menuGlobalBA("menu.Global Mapping",false,true);
     pangolin::Var<bool> menuDrawLidar("menu.Draw Lidar Map",false,true);
+    pangolin::Var<bool> menuDrawModelObs("menu.Draw Tracked Model",false,true);
     
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
     pangolin::Var<bool> menuSave("menu.Save Map",false,false);
@@ -143,7 +144,7 @@ void Viewer::Run()
         glClearColor(0.206, 0.206, 0.206,1.0f);
         mpMapDrawer->DrawCurrentCamera(Twc);
         if(menuShowKeyFrames || menuShowGraph)
-            mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph);
+            mpMapDrawer->DrawKeyFrames(menuShowKeyFrames,menuShowGraph,menuDrawModelObs);
         if(menuShowPoints)
 	{
             mpMapDrawer->DrawMapPoints();
