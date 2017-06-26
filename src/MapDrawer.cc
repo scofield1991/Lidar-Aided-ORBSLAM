@@ -304,90 +304,90 @@ void MapDrawer::SaveMap()
     const vector<MapPoint*> &vpMPs = mpMap->GetAllMapPoints();
     //------------------ Save VM --------------------
     //-----------------------------------------------
-    {
-	if(vpMPs.empty())
-	{
-	    cerr << "visual map is empty" << endl;
-	    return;
-	}
-	
-	// save visual map points
-	ofstream f;
-	f.open("/home/doom/indoor_map/visual_map/visualmap.txt");
-	f << fixed;
-	int totalNum = 0;
-	vector<size_t> index;
-	for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
-	{
-	    if(vpMPs[i]->isBad())
-		continue;
-	    
-	    if(vpMPs[i]->Observations() < 10)
-		continue;
-	    
-	    double minDis = vpMPs[i]->GetMinDistanceInvariance();
-	    double maxDis = vpMPs[i]->GetMaxDistanceInvariance();
-	    double diffDis = abs(maxDis - minDis);
-	    if(diffDis > 10)
-		continue;
-	    
-	    totalNum++;
-	    index.push_back(i);
-	}
-	f << vpKFs.size() << endl;
-	f << totalNum << endl;
-	// visual map points format: x y z, num_Obs, [obs_id...], mindist, maxidst, scaleFactor, ScaleLevels, [normVec]
-	for(size_t i=0, iend=index.size(); i<iend;i++)
-	{
-	    cv::Mat pos = vpMPs[index[i]]->GetWorldPos();
-	    map<KeyFrame*, size_t> mObs = vpMPs[index[i]]->GetObservations();
-	    f << setprecision(9) << pos.at<float>(0) << " " << pos.at<float>(1) << " " << pos.at<float>(2) << " " << mObs.size();
-	    for(map<KeyFrame*, size_t>::iterator it = mObs.begin(), ite = mObs.end(); it!=ite; it++)
-	    {
-		f << " " << it->first->mnId;
-	    }
-	    f << " " << vpMPs[index[i]]->GetMinDistanceInvariance() << " " << vpMPs[index[i]]->GetMaxDistanceInvariance();
-	    cv::Mat normv = vpMPs[index[i]]->GetNormal();
-	    f << " " << normv.at<float>(0,0) << " " << normv.at<float>(1,0) << " " << normv.at<float>(2,0); 
-	    f << endl;
-	}
-	f.close();
-	
-	//------------------ Save Descriptor --------------------
-	//-------------------------------------------------------
-	stringstream ss;
-	for(size_t i=0, iend=index.size(); i<iend;i++)
-	{
-	    cout << "saving " << i << "th Descriptor vector" << endl;
-// 	    cv::Mat mDes = vpMPs[index[i]]->GetDescriptor();
-	    vector<cv::Mat> vDes = vpMPs[index[i]]->mvDescriptors;
-	    ss.str("");
-	    ss << "/home/doom/indoor_map/visual_map/des_";
-	    ss << std::setfill ('0') << std::setw (5) << i << ".txt";
-	    f.open(ss.str().c_str());
-	    f << fixed;
-	    
-	    f << vDes.size() << endl;
-	    for(int j = 0; j < vDes.size(); j++)
-	    {
-		cv::Mat mDes = vDes[j];
-	    
-		if(j == 0)
-		  f << mDes.rows << " " << mDes.cols << endl;
-		for(int r = 0; r < mDes.rows; r++)
-		{
-		    for(int c = 0; c < mDes.cols; c++)
-		    {
-    // 		    cout << mDes.at<uchar>(r, c) << endl;
-			f << (int)mDes.at<unsigned char>(r, c) << " ";
-		    }
-		    f << endl;
-		}
-	    }
-	    
-	    f.close();
-	}
-    }
+//     {
+// 	if(vpMPs.empty())
+// 	{
+// 	    cerr << "visual map is empty" << endl;
+// 	    return;
+// 	}
+// 	
+// 	// save visual map points
+// 	ofstream f;
+// 	f.open("/home/doom/indoor_map/visual_map/visualmap.txt");
+// 	f << fixed;
+// 	int totalNum = 0;
+// 	vector<size_t> index;
+// 	for(size_t i=0, iend=vpMPs.size(); i<iend;i++)
+// 	{
+// 	    if(vpMPs[i]->isBad())
+// 		continue;
+// 	    
+// 	    if(vpMPs[i]->Observations() < 10)
+// 		continue;
+// 	    
+// 	    double minDis = vpMPs[i]->GetMinDistanceInvariance();
+// 	    double maxDis = vpMPs[i]->GetMaxDistanceInvariance();
+// 	    double diffDis = abs(maxDis - minDis);
+// 	    if(diffDis > 10)
+// 		continue;
+// 	    
+// 	    totalNum++;
+// 	    index.push_back(i);
+// 	}
+// 	f << vpKFs.size() << endl;
+// 	f << totalNum << endl;
+// 	// visual map points format: x y z, num_Obs, [obs_id...], mindist, maxidst, scaleFactor, ScaleLevels, [normVec]
+// 	for(size_t i=0, iend=index.size(); i<iend;i++)
+// 	{
+// 	    cv::Mat pos = vpMPs[index[i]]->GetWorldPos();
+// 	    map<KeyFrame*, size_t> mObs = vpMPs[index[i]]->GetObservations();
+// 	    f << setprecision(9) << pos.at<float>(0) << " " << pos.at<float>(1) << " " << pos.at<float>(2) << " " << mObs.size();
+// 	    for(map<KeyFrame*, size_t>::iterator it = mObs.begin(), ite = mObs.end(); it!=ite; it++)
+// 	    {
+// 		f << " " << it->first->mnId;
+// 	    }
+// 	    f << " " << vpMPs[index[i]]->GetMinDistanceInvariance() << " " << vpMPs[index[i]]->GetMaxDistanceInvariance();
+// 	    cv::Mat normv = vpMPs[index[i]]->GetNormal();
+// 	    f << " " << normv.at<float>(0,0) << " " << normv.at<float>(1,0) << " " << normv.at<float>(2,0); 
+// 	    f << endl;
+// 	}
+// 	f.close();
+// 	
+// 	//------------------ Save Descriptor --------------------
+// 	//-------------------------------------------------------
+// 	stringstream ss;
+// 	for(size_t i=0, iend=index.size(); i<iend;i++)
+// 	{
+// 	    cout << "saving " << i << "th Descriptor vector" << endl;
+// // 	    cv::Mat mDes = vpMPs[index[i]]->GetDescriptor();
+// 	    vector<cv::Mat> vDes = vpMPs[index[i]]->mvDescriptors;
+// 	    ss.str("");
+// 	    ss << "/home/doom/indoor_map/visual_map/des_";
+// 	    ss << std::setfill ('0') << std::setw (5) << i << ".txt";
+// 	    f.open(ss.str().c_str());
+// 	    f << fixed;
+// 	    
+// 	    f << vDes.size() << endl;
+// 	    for(int j = 0; j < vDes.size(); j++)
+// 	    {
+// 		cv::Mat mDes = vDes[j];
+// 	    
+// 		if(j == 0)
+// 		  f << mDes.rows << " " << mDes.cols << endl;
+// 		for(int r = 0; r < mDes.rows; r++)
+// 		{
+// 		    for(int c = 0; c < mDes.cols; c++)
+// 		    {
+//     // 		    cout << mDes.at<uchar>(r, c) << endl;
+// 			f << (int)mDes.at<unsigned char>(r, c) << " ";
+// 		    }
+// 		    f << endl;
+// 		}
+// 	    }
+// 	    
+// 	    f.close();
+// 	}
+//     }
     
     {
 	ofstream f;
@@ -438,6 +438,48 @@ void MapDrawer::SaveMap()
 	    for(vit = _mBowVec.begin(); vit != _mBowVec.end(); ++vit)
 	    {
 	      f << vit->first << " " << vit->second << endl;
+	    }
+	    
+	    //save feat vec
+	    DBoW2::FeatureVector _mFeatVec = pKF->mFeatVec;
+	    int M = _mFeatVec.size();
+	    //output num of feat vector
+	    f << M << endl;
+	    DBoW2::FeatureVector::const_iterator fit;
+	    for(fit = _mFeatVec.begin(); fit != _mFeatVec.end(); ++fit)
+	    {
+		f << fit->first << " " << fit->second.size() << " ";
+		for(int i = 0; i < fit->second.size(); i++)
+		{
+		    f << fit->second[i] << " ";
+		}
+	    }
+	    f << endl;
+	    
+	    //save map points
+	    const vector<MapPoint*> vpMapPointsKF = pKF->GetMapPointMatches();
+	    f << vpMapPointsKF.size() << endl;
+	    for(int i = 0; i < vpMapPointsKF.size(); i++)
+	    {
+		MapPoint* pMP = vpMapPointsKF[i];
+		if(!pMP || pMP->isBad())
+		{
+		    f << -1 << endl;
+		}
+		else
+		{
+		    cv::Mat pos = pMP->GetWorldPos();
+		    map<KeyFrame*, size_t> mObs = pMP->GetObservations();
+		    f << setprecision(9) << pos.at<float>(0) << " " << pos.at<float>(1) << " " << pos.at<float>(2) << " " << mObs.size();
+		    for(map<KeyFrame*, size_t>::iterator it = mObs.begin(), ite = mObs.end(); it!=ite; it++)
+		    {
+			f << " " << it->first->mnId;
+		    }
+		    f << " " << pMP->GetMinDistanceInvariance() << " " << pMP->GetMaxDistanceInvariance();
+		    cv::Mat normv = pMP->GetNormal();
+		    f << " " << normv.at<float>(0,0) << " " << normv.at<float>(1,0) << " " << normv.at<float>(2,0); 
+		    f << endl;
+		}
 	    }
 	    
 	    f.close();

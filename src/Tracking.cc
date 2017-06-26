@@ -1750,17 +1750,18 @@ void Tracking::CreateNewKeyFrame()
         }
     }
     
-    ORBmatcher matcher(0.7);
-    int matches = matcher.SearchByModelProjection(pKF, mpMap->GetAllModelPoints(), 3);
-    cout << "Model points searched with " << matches << " points" << endl;
-    for(int i = 0; i < pKF->mvpModelPoints.size(); i++)
-    {
-	MapPoint* pModelPt = pKF->mvpModelPoints[i];
-	if(pModelPt)
-	{
-	    pModelPt->AddObservation(pKF, i);
-	}
-    }
+    //Model Based Matcher
+//     ORBmatcher matcher(0.7);
+//     int matches = matcher.SearchByModelProjection(pKF, mpMap->GetAllModelPoints(), 3);
+//     cout << "Model points searched with " << matches << " points" << endl;
+//     for(int i = 0; i < pKF->mvpModelPoints.size(); i++)
+//     {
+// 	MapPoint* pModelPt = pKF->mvpModelPoints[i];
+// 	if(pModelPt)
+// 	{
+// 	    pModelPt->AddObservation(pKF, i);
+// 	}
+//     }
 
     mpLocalMapper->InsertKeyFrame(pKF);
 
