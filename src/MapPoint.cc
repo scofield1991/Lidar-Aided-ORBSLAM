@@ -48,6 +48,11 @@ MapPoint::MapPoint(const int& id, const cv::Mat& Pos, const float maxDis, const 
     ComputeModelDescriptors();
 }
 
+void MapPoint::Save(const string& pathName)
+{
+    
+}
+
 void MapPoint::ComputeModelDescriptors()
 {
     // Compute distances between them
