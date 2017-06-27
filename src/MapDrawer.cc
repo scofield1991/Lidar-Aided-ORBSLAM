@@ -555,15 +555,25 @@ void MapDrawer::DrawMapLocalL()
 
 void MapDrawer::DrawMapV()
 {
-    vector<Eigen::Vector3d> vpPoints = mpMap->mvPointsPos;
+//     vector<Eigen::Vector3d> vpPoints = mpMap->mvPointsPos;
+    std::vector<ModelKeyFrame> vMdKFs = mpMap->GetAllModelKFs();
         
     glPointSize(mPointSize);
     glBegin(GL_POINTS);
     glColor3f(0.580, 0.000, 0.827);
     
-    for(size_t i=0, iend=vpPoints.size(); i<iend;i++)
+//     for(size_t i=0, iend=vpPoints.size(); i<iend;i++)
+    for(vector<ModelKeyFrame>::iterator it = vMdKFs.begin(), ite = vMdKFs.end(); it!=ite; it++)
     {
-	glVertex3f(vpPoints[i][0], vpPoints[i][1], vpPoints[i][2]);
+	ModelKeyFrame mMdKF = *it;
+	vector<MapPoint*> vMdMP = mMdKF.mvpModelPoints;
+	for(MapPoint* it:vMdMP)
+	{
+	    if(!it)
+	      continue;
+	    cv::Mat mPos = it->GetWorldPos();
+	    glVertex3f(mPos.at<float>(0), mPos.at<float>(1), mPos.at<float>(2));
+	}
     }
     
     glEnd();
@@ -575,16 +585,20 @@ void MapDrawer::DrawMapK()
     const float h = w*0.75;
     const float z = w*0.6;
 
-    map<int, pair<int, KFPair>> mKFItems = mpMap->mKFItems;
+//     map<int, pair<int, KFPair>> mKFItems = mpMap->mKFItems;
+    std::vector<ModelKeyFrame> vMdKFs = mpMap->GetAllModelKFs();
     int maxindex = mpMap->getMaxIndex();
-    for(map<int, pair<int, KFPair>>::iterator it = mKFItems.begin(), ite = mKFItems.end(); it!=ite; it++)
+//     for(map<int, pair<int, KFPair>>::iterator it = mKFItems.begin(), ite = mKFItems.end(); it!=ite; it++)
+    for(vector<ModelKeyFrame>::iterator it = vMdKFs.begin(), ite = vMdKFs.end(); it!=ite; it++)
     {
-	KFPair kfItem = it->second.second;
-	cv::Mat kfPose = kfItem.Twc;
+// 	KFPair kfItem = it->second.second;
+// 	cv::Mat kfPose = kfItem.Twc;
+	ModelKeyFrame mMdKF = *it;
 
 	glPushMatrix();
 
-	glMultMatrixf(kfPose.ptr<GLfloat>(0));
+// 	glMultMatrixf(kfPose.ptr<GLfloat>(0));
+	glMultMatrixf(mMdKF.Twc.ptr<GLfloat>(0));
 
 	glLineWidth(mKeyFrameLineWidth);
 	if(it->first != maxindex)

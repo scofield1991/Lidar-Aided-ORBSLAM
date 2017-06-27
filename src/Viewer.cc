@@ -151,7 +151,7 @@ void Viewer::Run()
 	    if(bLoadMap)
 	    {
 		mpMapDrawer->DrawMapL();
-		mpMapDrawer->DrawMapV();
+// 		mpMapDrawer->DrawMapV();
 		mpMapDrawer->DrawMapK();
 	    }
 	}
