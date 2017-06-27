@@ -392,6 +392,16 @@ void MapDrawer::SaveMap()
     {
 	ofstream f;
 	stringstream ss;
+	
+	//------------------ Save Num KF --------------------
+	//----------------------------------------------------------
+	ss.str("");
+	ss << "/home/doom/indoor_map/numKF.txt";
+	f.open(ss.str().c_str());
+	f << fixed;
+	f << vpKFs.size() << endl;
+	f.close();
+	
 	for(size_t i = 0, iend = vpKFs.size(); i < iend; i++)
 	{
 	    KeyFrame* pKF = vpKFs[i];
