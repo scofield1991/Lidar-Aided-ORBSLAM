@@ -53,6 +53,24 @@ long unsigned int Map::ModelPointsInMap()
     return mspModelPoints.size();
 }
 
+void Map::AddModelKeyFrame(ModelKeyFrame* pMdKF)
+{
+    unique_lock<mutex> lock(mMutexMap);
+    mvpModelKeyFrames.push_back(pMdKF);
+}
+
+std::vector< ModelKeyFrame* > Map::GetAllModelKFs()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mvpModelKeyFrames;
+}
+
+long unsigned int Map::ModelKFsInMap()
+{
+    unique_lock<mutex> lock(mMutexMap);
+    return mvpModelKeyFrames.size();
+}
+
 void Map::setGlobalMapUpdated(const bool& isupdated)
 {
     _updateMap = isupdated;
@@ -82,12 +100,14 @@ void Map::LoadMap(const string& str)
     shared_ptr<DP> cloud_(new DP(tempdp));
     _cloud = cloud_;
     
+    //load total number of KFs
     ss.str("");
-    ss << str.c_str() << "/visual_map/visualmap.txt";
+//     ss << str.c_str() << "/visual_map/visualmap.txt";
+    ss << str.c_str() << "/visual_map/numKF.txt";
     ifstream points_in(ss.str().c_str());
-    int NumPoints, NumKFs;
+    int /*NumPoints, */NumKFs;
     points_in >> NumKFs;
-    points_in >> NumPoints;
+//     points_in >> NumPoints;
     
     //load lidar map
     vCloud.clear();
@@ -105,68 +125,7 @@ void Map::LoadMap(const string& str)
 	vCloud.push_back(_cloud_);
     }
     
-    //load visual map
-    mvPointsPos.clear();
-    vFeatureDescriptros.clear();
-    mKFPtIds.clear();
-    mPtItems.clear();
-    ifstream desIn;
-    for(int i = 0; i < NumPoints; i++)
-    {
-	Eigen::Vector3d vPos;
-	points_in >> vPos[0];
-	points_in >> vPos[1];
-	points_in >> vPos[2];
-	int numObs;
-	points_in >> numObs;
-	for(int k = 0; k < numObs; k++)
-	{
-	    int mnId;
-	    points_in >> mnId;
-	    mKFPtIds[mnId].push_back(i);
-	}
-	double mindis, maxdis;
-	points_in >> mindis >> maxdis;
-	double normX, normY, normZ;
-	cv::Mat norm = cv::Mat(3,1,CV_32F);
-	points_in >> normX; points_in >> normY; points_in >> normZ;
-	norm.at<float>(0,0) = normX;
-	norm.at<float>(1,0) = normY;
-	norm.at<float>(2,0) = normZ;
-	PointItem tempPti;
-	tempPti.minDis = mindis;
-	tempPti.maxDis = maxdis;
-	tempPti.normal = norm;
-	mPtItems[i] = tempPti;
-	mvPointsPos.push_back(vPos);
-	ss.str("");
-	ss << str.c_str() << "/visual_map/des_" << std::setfill ('0') << std::setw (5) << i << ".txt";
-	desIn.open(ss.str().c_str());
-	int numDes, numRows, numCols;
-	desIn >> numDes >> numRows >> numCols;
-	vector<cv::Mat> vDes;
-	for(int numd = 0; numd < numDes; numd++)
-	{
-	    cv::Mat mDes = cv::Mat(1, 32, CV_8U);
-	    for(int r = 0; r < numRows; r++)
-	    {
-		int temp;
-		for(int c = 0; c < numCols; c++)
-		{desIn >> temp; mDes.at<unsigned char>(r, c) = temp;}
-	    }
-	    vDes.push_back(mDes);
-	}
-	vFeatureDescriptros.push_back(vDes);
-	
-	//Add Model Point
-	cv::Mat x3D = Converter::toCvMat(vPos);
-	MapPoint* pMP = new MapPoint(i, x3D, mindis, maxdis, norm, vDes, this);
-
-	this->AddModelPoint(pMP);
-    }
-    cout << "There are " << this->ModelPointsInMap() << " " << MapPoint::nNextId << " model points in map." << endl;
-    points_in.close();
-    
+    //load KF
     mKFItems.clear();
     ifstream kfs_in;
     for(int i = 0; i < NumKFs; i++)
@@ -176,11 +135,15 @@ void Map::LoadMap(const string& str)
 
 	kfs_in.open(ss.str().c_str());
 	
+	ModelKeyFrame mMdKF;
+	
+	// read ID
 	int mnId;
 	kfs_in >> mnId;
 	
-	KFPair kfPair;
+// 	KFPair kfPair;
 	
+	// read camera pose and navigation pose
 	Eigen::Vector3d twc;
 	Eigen::Quaterniond qwc;
 	cv::Mat Twc = cv::Mat::eye(4,4,CV_32F);
@@ -197,9 +160,10 @@ void Map::LoadMap(const string& str)
 	Twl.Set_Pos(twl);
 	Twl.Set_Rot(qwl.toRotationMatrix());
 
-	kfPair.Twc = Twc;
-	kfPair.Twl = Twl;
+// 	kfPair.Twc = Twc;
+// 	kfPair.Twl = Twl;
 	
+	// read BoW vector
 	int Num_Bows;
 	kfs_in >> Num_Bows;  
 	DBoW2::BowVector vBow;
@@ -212,15 +176,100 @@ void Map::LoadMap(const string& str)
 	    vBow.addWeight(id, value);
 	}
 	
-	kfPair.vBow = vBow;
+	// read feature vector
+	int Num_Feats;
+	kfs_in >> Num_Feats;
+	DBoW2::FeatureVector vFeat;
+	for(int k = 0; k < Num_Feats; k++)
+	{
+	    DBoW2::NodeId id;
+	    unsigned int value;
+	    kfs_in >> id;
+	    int numVec;
+	    kfs_in >> numVec;
+	    for(int num = 0; num < numVec; num++)
+	    {
+		kfs_in >> value;
+		vFeat.addFeature(id, value);
+	    }
+	}
 	
-	std::pair<int, KFPair> tmpPair;
-	tmpPair.first = mnId;
-	tmpPair.second = kfPair;
-	mKFItems[i] = tmpPair;
+	// read model points
+	int num_ModelPoints;
+	kfs_in >> num_ModelPoints;
+	
+	
+// 	kfPair.vBow = vBow;
+	
+// 	std::pair<int, KFPair> tmpPair;
+// 	tmpPair.first = mnId;
+// 	tmpPair.second = kfPair;
+// 	mKFItems[i] = tmpPair;
 	
 	kfs_in.close();
     }
+    
+    //     //load visual map
+//     mvPointsPos.clear();
+//     vFeatureDescriptros.clear();
+//     mKFPtIds.clear();
+//     mPtItems.clear();
+//     ifstream desIn;
+//     for(int i = 0; i < NumPoints; i++)
+//     {
+// 	Eigen::Vector3d vPos;
+// 	points_in >> vPos[0];
+// 	points_in >> vPos[1];
+// 	points_in >> vPos[2];
+// 	int numObs;
+// 	points_in >> numObs;
+// 	for(int k = 0; k < numObs; k++)
+// 	{
+// 	    int mnId;
+// 	    points_in >> mnId;
+// 	    mKFPtIds[mnId].push_back(i);
+// 	}
+// 	double mindis, maxdis;
+// 	points_in >> mindis >> maxdis;
+// 	double normX, normY, normZ;
+// 	cv::Mat norm = cv::Mat(3,1,CV_32F);
+// 	points_in >> normX; points_in >> normY; points_in >> normZ;
+// 	norm.at<float>(0,0) = normX;
+// 	norm.at<float>(1,0) = normY;
+// 	norm.at<float>(2,0) = normZ;
+// 	PointItem tempPti;
+// 	tempPti.minDis = mindis;
+// 	tempPti.maxDis = maxdis;
+// 	tempPti.normal = norm;
+// 	mPtItems[i] = tempPti;
+// 	mvPointsPos.push_back(vPos);
+// 	ss.str("");
+// 	ss << str.c_str() << "/visual_map/des_" << std::setfill ('0') << std::setw (5) << i << ".txt";
+// 	desIn.open(ss.str().c_str());
+// 	int numDes, numRows, numCols;
+// 	desIn >> numDes >> numRows >> numCols;
+// 	vector<cv::Mat> vDes;
+// 	for(int numd = 0; numd < numDes; numd++)
+// 	{
+// 	    cv::Mat mDes = cv::Mat(1, 32, CV_8U);
+// 	    for(int r = 0; r < numRows; r++)
+// 	    {
+// 		int temp;
+// 		for(int c = 0; c < numCols; c++)
+// 		{desIn >> temp; mDes.at<unsigned char>(r, c) = temp;}
+// 	    }
+// 	    vDes.push_back(mDes);
+// 	}
+// 	vFeatureDescriptros.push_back(vDes);
+// 	
+// 	//Add Model Point
+// 	cv::Mat x3D = Converter::toCvMat(vPos);
+// 	MapPoint* pMP = new MapPoint(i, x3D, mindis, maxdis, norm, vDes, this);
+// 
+// 	this->AddModelPoint(pMP);
+//     }
+//     cout << "There are " << this->ModelPointsInMap() << " " << MapPoint::nNextId << " model points in map." << endl;
+//     points_in.close();
 }
 
 void Map::AddKeyFrame(KeyFrame *pKF)

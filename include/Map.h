@@ -61,6 +61,23 @@ struct PointItem
     cv::Mat normal;
 };
 
+// struct for model keyframe
+struct ModelKeyFrame
+{
+    //Id
+    int nId;
+    //camera pose
+    cv::Mat Twc;
+    //navigation pose
+    NavState Twl;
+    //bow vector
+    DBoW2::BowVector vBow;
+    //feature vector
+    DBoW2::FeatureVector vFeat;
+    //model map points seen in this keyframe
+    std::vector<MapPoint*> mvpModelPoints;
+};
+
 class Map
 { 
   
@@ -78,8 +95,13 @@ public:
     std::vector<MapPoint*> GetAllModelPoints();
     long unsigned int ModelPointsInMap();
     
+    void AddModelKeyFrame(ModelKeyFrame* pMdKF);
+    std::vector<ModelKeyFrame*> GetAllModelKFs();
+    long unsigned int ModelKFsInMap();
+    
 protected:
     std::set<MapPoint*> mspModelPoints;
+    std::vector<ModelKeyFrame*> mvpModelKeyFrames;
     
 private:
     

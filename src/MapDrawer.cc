@@ -394,7 +394,7 @@ void MapDrawer::SaveMap()
 	stringstream ss;
 	
 	//------------------ Save Num KF --------------------
-	//----------------------------------------------------------
+	//---------------------------------------------------
 	ss.str("");
 	ss << "/home/doom/indoor_map/numKF.txt";
 	f.open(ss.str().c_str());
@@ -487,7 +487,19 @@ void MapDrawer::SaveMap()
 		    }
 		    f << " " << pMP->GetMinDistanceInvariance() << " " << pMP->GetMaxDistanceInvariance();
 		    cv::Mat normv = pMP->GetNormal();
-		    f << " " << normv.at<float>(0,0) << " " << normv.at<float>(1,0) << " " << normv.at<float>(2,0); 
+		    f << " " << normv.at<float>(0,0) << " " << normv.at<float>(1,0) << " " << normv.at<float>(2,0);
+		    
+		    //save Descriptor
+		    cv::Mat mDes = pMP->GetDescriptor();
+		    f << " " << mDes.rows << " " << mDes.cols << " ";
+		    for(int r = 0; r < mDes.rows; r++)
+		    {
+			for(int c = 0; c < mDes.cols; c++)
+			{
+			    f << (int)mDes.at<unsigned char>(r, c) << " ";
+			}
+		    }
+		    
 		    f << endl;
 		}
 	    }
