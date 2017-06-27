@@ -111,7 +111,7 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
                     }
                 }
 
-                if(bestDist1<=TH_LOW)
+                if(bestDist1<=120/*TH_LOW*/)
                 {
                     if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2))
                     {
