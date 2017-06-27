@@ -624,7 +624,7 @@ void MapDrawer::DrawMapK()
 	glMultMatrixf(mMdKF.Twc.ptr<GLfloat>(0));
 
 	glLineWidth(mKeyFrameLineWidth);
-	if(it->first != maxindex)
+	if(mMdKF.nId != maxindex)
 	  glColor3f(0.941, 0.502, 0.502);
 	else
 	  glColor3f(0, 1, 1);
