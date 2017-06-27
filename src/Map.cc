@@ -113,6 +113,7 @@ void Map::LoadMap(const string& str)
     ifstream points_in(ss.str().c_str());
     int /*NumPoints, */NumKFs;
     points_in >> NumKFs;
+    cout << "There should be " << NumKFs << " KFs" << endl;
 //     points_in >> NumPoints;
     
     //load lidar map
