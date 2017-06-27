@@ -48,6 +48,37 @@ MapPoint::MapPoint(const int& id, const cv::Mat& Pos, const float maxDis, const 
     ComputeModelDescriptors();
 }
 
+MapPoint::MapPoint(const cv::Mat& Pos,const float maxDis,const float minDis,const cv::Mat& normVect,const cv::Mat& mDes,const vector<int>& vObs,ORB_SLAM2::Map* pMap):
+    mnFirstKFid(-1), mnFirstFrame(-1), nObs(0), mnTrackReferenceForFrame(0),
+    mnLastFrameSeen(0), mnBALocalForKF(0), mnFuseCandidateForKF(0), mnLoopPointForKF(0), mnCorrectedByKF(0),
+    mnCorrectedReference(0), mnBAGlobalForKF(0), mpRefKF(static_cast<KeyFrame*>(NULL)), mnVisible(1), mnFound(1), mbBad(false),
+    mpReplaced(static_cast<MapPoint*>(NULL)), mfMinDistance(minDis), mfMaxDistance(maxDis), mpMap(pMap)
+{
+    Pos.copyTo(mWorldPos);
+    
+    normVect.copyTo(mNormalVector);
+    
+    // MapPoints can be created from Tracking and Local Mapping. This mutex avoid conflicts with id.
+    unique_lock<mutex> lock(mpMap->mMutexPointCreation);
+    mnId = nNextId++;
+    
+    mDescriptor = mDes;
+    
+    mvModelObservation = vObs;
+}
+
+vector< int > MapPoint::GetModelObservation()
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    return mvModelObservation;
+}
+
+void MapPoint::SetModelObservation(const vector< int >& vObs)
+{
+    unique_lock<mutex> lock(mMutexFeatures);
+    mvModelObservation = vObs;
+}
+
 void MapPoint::ComputeModelDescriptors()
 {
     // Compute distances between them

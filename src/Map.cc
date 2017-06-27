@@ -50,16 +50,22 @@ std::vector< MapPoint* > Map::GetAllModelPoints()
 long unsigned int Map::ModelPointsInMap()
 {
     unique_lock<mutex> lock(mMutexMap);
-    return mspModelPoints.size();
+//     return mspModelPoints.size();
+    unsigned int number = 0;
+    for(ModelKeyFrame it:mvpModelKeyFrames)
+    {
+	number += it.num;
+    }
+    return number;
 }
 
-void Map::AddModelKeyFrame(ModelKeyFrame* pMdKF)
+void Map::AddModelKeyFrame(ModelKeyFrame pMdKF)
 {
     unique_lock<mutex> lock(mMutexMap);
     mvpModelKeyFrames.push_back(pMdKF);
 }
 
-std::vector< ModelKeyFrame* > Map::GetAllModelKFs()
+std::vector<ModelKeyFrame> Map::GetAllModelKFs()
 {
     unique_lock<mutex> lock(mMutexMap);
     return mvpModelKeyFrames;
@@ -195,9 +201,76 @@ void Map::LoadMap(const string& str)
 	}
 	
 	// read model points
-	int num_ModelPoints;
+	int num_ModelPoints, real_num = 0;
 	kfs_in >> num_ModelPoints;
+	vector<MapPoint*> vMdMPs;
+	for(int k = 0; k < num_ModelPoints; k++)
+	{ 
+	    //read pose
+	    Eigen::Vector3d vPos;
+	    kfs_in >> vPos[0];
+	 
+	    //judge if this is a good point
+	    if(vPos[0] == -1)
+	    {
+		vMdMPs.push_back(static_cast<MapPoint*>(NULL));
+		continue;
+	    }
+	    real_num++;
+	    
+	    kfs_in >> vPos[1];
+	    kfs_in >> vPos[2];
+	    cv::Mat x3D = Converter::toCvMat(vPos);
+	    
+	    //read observations
+	    int numObs;
+	    kfs_in >> numObs;
+	    vector<int> vObs;
+	    for(int k = 0; k < numObs; k++)
+	    {
+		int mnId;
+		kfs_in >> mnId;
+		vObs.push_back(mnId);
+	    }
+	    
+	    //read min(max) dis and norm vector
+	    double mindis, maxdis;
+	    kfs_in >> mindis >> maxdis;
+	    double normX, normY, normZ;
+	    cv::Mat norm = cv::Mat(3,1,CV_32F);
+	    kfs_in >> normX; kfs_in >> normY; kfs_in >> normZ;
+	    norm.at<float>(0,0) = normX;
+	    norm.at<float>(1,0) = normY;
+	    norm.at<float>(2,0) = normZ;
+	    
+	    //read descriptor
+	    int numRows, numCols;
+	    kfs_in >> numRows >> numCols;
+	    cv::Mat mDes = cv::Mat(1, 32, CV_8U);
+	    for(int r = 0; r < numRows; r++)
+	    {
+		int temp;
+		for(int c = 0; c < numCols; c++)
+		{kfs_in >> temp; mDes.at<unsigned char>(r, c) = temp;}
+	    }
+	    
+	    //create model point
+	    MapPoint* pMP = new MapPoint(x3D, mindis, maxdis, norm, mDes, vObs, this);
+	    vMdMPs.push_back(pMP);
+	}
 	
+	ModelKeyFrame pMdKF;
+	pMdKF.nId = mnId;
+	pMdKF.num = real_num;
+	pMdKF.Twc = Twc;
+	pMdKF.Twl = Twl;
+	pMdKF.vBow = vBow;
+	pMdKF.vFeat = vFeat;
+	pMdKF.mvpModelPoints = vMdMPs;
+	//add model keyframe into map
+	this->AddModelKeyFrame(pMdKF);
+	
+	cout << "this KeyFrame has " << real_num << " model points." << endl;
 	
 // 	kfPair.vBow = vBow;
 	
@@ -208,7 +281,7 @@ void Map::LoadMap(const string& str)
 	
 	kfs_in.close();
     }
-    
+    cout << "Have " << mvpModelKeyFrames.size() << " model keyframes" << endl;
     //     //load visual map
 //     mvPointsPos.clear();
 //     vFeatureDescriptros.clear();

@@ -40,11 +40,32 @@ class MapPoint
 {
 public:
     //Model based points
-    MapPoint(const int& id, const cv::Mat& Pos, const float maxDis, const float minDis, const cv::Mat& normVect, const vector< cv::Mat >& vDes, ORB_SLAM2::Map* pMap);
-  
+    MapPoint(const int& id, 
+	     const cv::Mat& Pos, 
+	     const float maxDis, 
+	     const float minDis, 
+	     const cv::Mat& normVect, 
+	     const vector< cv::Mat >& vDes, 
+	     ORB_SLAM2::Map* pMap);
+    
+    MapPoint(const cv::Mat& Pos,
+	     const float maxDis,
+	     const float minDis,
+	     const cv::Mat& normVect,
+	     const cv::Mat& mDes,
+	     const vector<int>& vObs,
+	     ORB_SLAM2::Map* pMap);
+    
     vector<cv::Mat> mvDescriptors;
     
     void ComputeModelDescriptors();
+    
+    vector<int> GetModelObservation();
+    
+    void SetModelObservation(const vector<int>& vObs);
+    
+private:
+    vector<int> mvModelObservation;
   
 public:
     MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);

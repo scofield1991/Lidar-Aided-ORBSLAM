@@ -66,6 +66,8 @@ struct ModelKeyFrame
 {
     //Id
     int nId;
+    //number of model points
+    unsigned int num;
     //camera pose
     cv::Mat Twc;
     //navigation pose
@@ -95,13 +97,13 @@ public:
     std::vector<MapPoint*> GetAllModelPoints();
     long unsigned int ModelPointsInMap();
     
-    void AddModelKeyFrame(ModelKeyFrame* pMdKF);
-    std::vector<ModelKeyFrame*> GetAllModelKFs();
+    void AddModelKeyFrame(ModelKeyFrame pMdKF);
+    std::vector<ModelKeyFrame> GetAllModelKFs();
     long unsigned int ModelKFsInMap();
     
 protected:
     std::set<MapPoint*> mspModelPoints;
-    std::vector<ModelKeyFrame*> mvpModelKeyFrames;
+    std::vector<ModelKeyFrame> mvpModelKeyFrames;
     
 private:
     
