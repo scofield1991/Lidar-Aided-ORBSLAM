@@ -273,10 +273,10 @@ void Tracking::WithMapInitialization()
 	int selectedId = 0;
 	mpMap->setMaxIndex(selectedId);
 	
-	pair<int, KFPair> tempKFP = mpMap->mKFItems[selectedId];
-	int mnId = tempKFP.first;
-	KFPair kfpair = tempKFP.second;
-	vector<int> pIdList = mpMap->mKFPtIds[mnId];
+// 	pair<int, KFPair> tempKFP = mpMap->mKFItems[selectedId];
+// 	int mnId = tempKFP.first;
+// 	KFPair kfpair = tempKFP.second;
+// 	vector<int> pIdList = mpMap->mKFPtIds[mnId];
 	shared_ptr<DP> lidarMap = mpMap->vCloud[selectedId];
 	
 // 	vector<cv::Mat> vFeatureDes;
@@ -285,13 +285,22 @@ void Tracking::WithMapInitialization()
 // 	    vFeatureDes.push_back(mpMap->vFeatureDescriptros[it]);
 // 	}
 	
+	vector<ModelKeyFrame> vMdKFs = mpMap->GetAllModelKFs();
+	ModelKeyFrame mMdKf = vMdKFs[selectedId];
+	//candidate Model KFs list
+	vector<ModelKeyFrame> vCandKFs;
+	for(int i = max(0, selectedId - 5); i < min(selectedId + 5, vMdKFs.size()-1); i++)
+	{
+	    vCandKFs.push_back(vMdKFs[i]);
+	}
+	
 	//ICP initialization
 	icper.reset();
 	icper.process(lidarMap, mCurrentFrame.pCloud);
 	NavState dT;
 	dT.Set_Pos(icper.getDeltaP());
 	dT.Set_Rot(icper.getDeltaR());
-	cv::Mat Twc = kfpair.Twc.t();
+	cv::Mat Twc = mMdKf.Twc.t();
 	cv::Mat Twl_cv = Twc * ConfigParam::GetMatT_co();
 	Matrix4d Twl_eig = Converter::toMatrix4f(Twl_cv).cast<double>();
 	NavState Twl = Converter::toNavState(Twl_eig);
@@ -334,16 +343,24 @@ void Tracking::WithMapInitialization()
         }
         
         ORBmatcher matcher(0.7);
-	int matches = matcher.SearchByModelProjection(pKFini, mpMap->GetAllModelPoints(), 3);
-	cout << "Model points searched with " << matches << " points" << endl;
-	for(int i = 0; i < pKFini->mvpModelPoints.size(); i++)
+	vector<MapPoint*> vSearchedMapPoints;
+	for(int i = 0; i < vCandKFs.size(); i++)
 	{
-	    MapPoint* pModelPt = pKFini->mvpModelPoints[i];
-	    if(pModelPt)
-	    {
-		pModelPt->AddObservation(pKFini, i);
-	    }
+	    ModelKeyFrame tempMdKF = vCandKFs[i];
+	    int matches = matcher.SearchByModelBoW(tempMdKF, mCurrentFrame, vSearchedMapPoints);
+	    cout << "In " << tempMdKF.nId << "model kf, " << matches << " model points searched" << endl;
 	}
+	
+// 	int matches = matcher.SearchByModelProjection(pKFini, mpMap->GetAllModelPoints(), 3);
+// 	cout << "Model points searched with " << matches << " points" << endl;
+// 	for(int i = 0; i < pKFini->mvpModelPoints.size(); i++)
+// 	{
+// 	    MapPoint* pModelPt = pKFini->mvpModelPoints[i];
+// 	    if(pModelPt)
+// 	    {
+// 		pModelPt->AddObservation(pKFini, i);
+// 	    }
+// 	}
 
         cout << "New map created with " << mpMap->MapPointsInMap() << " points" << endl;
 	cout << "New Lidar Map created with " << mpLidarMap->MapPointsInMap() << " points" << endl;
