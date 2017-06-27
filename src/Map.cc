@@ -262,6 +262,27 @@ void Map::LoadMap(const string& str)
 	    vMdMPs.push_back(pMP);
 	}
 	
+	//read KF descriptor
+	int numRowsKF, numColsKF;
+	kfs_in >> numRowsKF >> numColsKF;
+	cv::Mat mDesKF = cv::Mat(numRowsKF, numColsKF, CV_8U);
+	for(int r = 0; r < numRowsKF; r++)
+	{
+	    int temp;
+	    for(int c = 0; c < numColsKF; c++)
+	    {kfs_in >> temp; mDesKF.at<unsigned char>(r, c) = temp;}
+	}
+	
+	//read KF keypoint angles
+	int numKpt;
+	kfs_in >> numKpt;
+	vector<float> tempAngles;
+	tempAngles.resize(numKpt);
+	for(int times = 0; times < numKpt; times++)
+	{
+	    kfs_in >> tempAngles[i];
+	}
+	
 	ModelKeyFrame pMdKF;
 	pMdKF.nId = mnId;
 	pMdKF.num = real_num;
@@ -270,6 +291,8 @@ void Map::LoadMap(const string& str)
 	pMdKF.vBow = vBow;
 	pMdKF.vFeat = vFeat;
 	pMdKF.mvpModelPoints = vMdMPs;
+	pMdKF.mDes = mDesKF;
+	pMdKF.vAngle = tempAngles;
 	//add model keyframe into map
 	this->AddModelKeyFrame(pMdKF);
 	

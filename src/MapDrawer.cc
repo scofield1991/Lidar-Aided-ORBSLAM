@@ -504,6 +504,29 @@ void MapDrawer::SaveMap()
 		}
 	    }
 	    
+	    //save KF Descriptor
+	    cv::Mat mDesKF = pKF->mDescriptors;
+	    f << mDesKF.rows << " " << mDesKF.cols << endl;
+	    for(int r = 0; r < mDesKF.rows; r++)
+	    {
+		for(int c = 0; c < mDesKF.cols; c++)
+		{
+		    f << (int)mDesKF.at<unsigned char>(r, c) << " ";
+		}
+	    }
+	    f << endl;
+	    
+	    //save KF key points
+	    const vector<cv::KeyPoint> vKpt = pKF->mvKeysUn;
+	    int numKpt = vKpt.size();
+	    f << numKpt << endl;
+	    for(int i = 0; i < numKpt; i++)
+	    {
+		cv::KeyPoint kpt = vKpt[i];
+		f << kpt.angle << " ";
+	    }
+	    f << endl;
+	    
 	    f.close();
 	}
     }

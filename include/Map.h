@@ -78,6 +78,10 @@ struct ModelKeyFrame
     DBoW2::FeatureVector vFeat;
     //model map points seen in this keyframe
     std::vector<MapPoint*> mvpModelPoints;
+    //KF descriptor
+    cv::Mat mDes;
+    //KF keypoint angle
+    std::vector<float> vAngle;
 };
 
 class Map

@@ -59,6 +59,8 @@ public:
 				const std::vector<MapPoint*> &vpPoints,
 				int th);
     
+    int SearchByModelBoW(ModelKeyFrame &pMdKF, Frame &F, std::vector<MapPoint*> &vpMapPointMatches);
+    
 public:
 
     ORBmatcher(float nnratio=0.6, bool checkOri=true);
