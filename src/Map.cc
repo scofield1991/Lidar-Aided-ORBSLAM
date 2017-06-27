@@ -136,6 +136,8 @@ void Map::LoadMap(const string& str)
     ifstream kfs_in;
     for(int i = 0; i < NumKFs; i++)
     {
+	cout << "load " << i << "th KF" << endl;
+      
 	ss.str("");
 	ss << str.c_str() << "/kf/kf_" << std::setfill ('0') << std::setw (5) << i << ".txt";
 
