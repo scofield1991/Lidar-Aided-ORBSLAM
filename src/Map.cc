@@ -109,7 +109,7 @@ void Map::LoadMap(const string& str)
     //load total number of KFs
     ss.str("");
 //     ss << str.c_str() << "/visual_map/visualmap.txt";
-    ss << str.c_str() << "/visual_map/numKF.txt";
+    ss << str.c_str() << "/numKF.txt";
     ifstream points_in(ss.str().c_str());
     int /*NumPoints, */NumKFs;
     points_in >> NumKFs;
