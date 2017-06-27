@@ -289,7 +289,8 @@ void Tracking::WithMapInitialization()
 	ModelKeyFrame mMdKf = vMdKFs[selectedId];
 	//candidate Model KFs list
 	vector<ModelKeyFrame> vCandKFs;
-	for(int i = max(0, selectedId - 5); i < min(selectedId + 5, vMdKFs.size()-1); i++)
+	int upperbound = vMdKFs.size()-1;
+	for(int i = max(0, selectedId - 5); i < min(selectedId + 5, upperbound); i++)
 	{
 	    vCandKFs.push_back(vMdKFs[i]);
 	}
