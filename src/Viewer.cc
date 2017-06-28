@@ -153,7 +153,7 @@ void Viewer::Run()
 		mpMapDrawer->DrawMapL();
 		mpMapDrawer->DrawMapV();
 		mpMapDrawer->DrawMapK();
-		mpMapDrawer->DrawRay(Twc);
+// 		mpMapDrawer->DrawRay(Twc);
 	    }
 	}
 	if(/*mpTracker->globalOptimized && */menuDrawLidar)

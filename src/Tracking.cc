@@ -359,10 +359,10 @@ void Tracking::WithMapInitialization()
 	    if(*it)
 	      TotalNum++;
 	}
-	cout << "Total Model Points " << TotalNum << endl;
-	mpMap->vpSearchedModelPoints.clear();
-	mpMap->vpSearchedModelPoints.resize(mCurrentFrame.N);
-	mpMap->vpSearchedModelPoints = vSearchedMapPoints;
+	cout << "Total Model Points " << TotalNum << ", with ratio " << TotalNum/mCurrentFrame.N << endl;
+// 	mpMap->vpSearchedModelPoints.clear();
+// 	mpMap->vpSearchedModelPoints.resize(mCurrentFrame.N);
+// 	mpMap->vpSearchedModelPoints = vSearchedMapPoints;
 
 // 	int matches = matcher.SearchByModelProjection(pKFini, mpMap->GetAllModelPoints(), 3);
 // 	cout << "Model points searched with " << matches << " points" << endl;
@@ -410,10 +410,10 @@ bool Tracking::TrackLocalMapWithLidar(bool bMapUpdated)
     SearchLocalPoints();
     
     //FIXME test: add model points into optimization
-    if(mpMap->hasGlobalMap())
-    {
-	SearchModelPoints();
-    }
+//     if(mpMap->hasGlobalMap())
+//     {
+// 	SearchModelPoints();
+//     }
 
     // Map updated, optimize with last KeyFrame
     Optimizer::PoseOptimization(&mCurrentFrame);
@@ -888,6 +888,11 @@ void Tracking::Track()
 
             if(mState==OK)
             {
+		if(mpMap->hasGlobalMap())
+		{
+		    
+		}
+	      
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
 
