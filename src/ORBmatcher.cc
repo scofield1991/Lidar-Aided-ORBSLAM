@@ -65,6 +65,7 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
 
     while(KFit != KFend && Fit != Fend)
     {
+	cout << KFit->first << " " << Fit->first << "|";
         if(KFit->first == Fit->first)
         {
 	    cout << "Got a match candidate" << endl;
@@ -155,7 +156,7 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
         }
     }
 
-
+cout << endl;
     if(mbCheckOrientation)
     {
         int ind1=-1;
