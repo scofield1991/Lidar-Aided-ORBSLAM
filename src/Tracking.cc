@@ -356,7 +356,7 @@ void Tracking::WithMapInitialization()
 	int TotalNum = 0;
 	for(vector<MapPoint*>::iterator it = vSearchedMapPoints.begin(); it != vSearchedMapPoints.end(); it++)
 	{
-	    if(it)
+	    if(*it)
 	      TotalNum++;
 	}
 	cout << "Total Model Points " << TotalNum << endl;
