@@ -347,17 +347,13 @@ void Tracking::WithMapInitialization()
 	vector<MapPoint*> vSearchedMapPoints;
 	vSearchedMapPoints = vector<MapPoint*>(mCurrentFrame.N,static_cast<MapPoint*>(NULL));
 	mCurrentFrame.ComputeBoW();
+	int TotalNum = 0;
 	for(int i = 0; i < vCandKFs.size(); i++)
 	{
 	    ModelKeyFrame tempMdKF = vCandKFs[i];
 	    int matches = matcher.SearchByModelBoW(tempMdKF, mCurrentFrame, vSearchedMapPoints);
 	    cout << "In " << tempMdKF.nId << "th model kf, " << matches << " model points searched" << endl;
-	}
-	int TotalNum = 0;
-	for(vector<MapPoint*>::iterator it = vSearchedMapPoints.begin(); it != vSearchedMapPoints.end(); it++)
-	{
-	    if(*it)
-	      TotalNum++;
+	    TotalNum += matches;
 	}
 	cout << "Total Model Points " << TotalNum << ", with ratio " << static_cast<double>(TotalNum)/static_cast<double>(mCurrentFrame.N) << endl;
 // 	mpMap->vpSearchedModelPoints.clear();
