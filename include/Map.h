@@ -105,6 +105,8 @@ public:
     std::vector<ModelKeyFrame> GetAllModelKFs();
     long unsigned int ModelKFsInMap();
     
+    std::vector<MapPoint*> vpSearchedModelPoints;
+    
 protected:
     std::set<MapPoint*> mspModelPoints;
     std::vector<ModelKeyFrame> mvpModelKeyFrames;

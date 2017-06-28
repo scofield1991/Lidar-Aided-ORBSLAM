@@ -102,6 +102,8 @@ public:
     vector<double> vRadius;
     vector<int> vIndexProj;
     void SearchModelPoints();
+    
+//     vector<MapPoint*> vpSearchedModelPoints;
 
 private:
     

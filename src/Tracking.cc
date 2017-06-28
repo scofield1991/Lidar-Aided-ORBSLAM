@@ -360,6 +360,9 @@ void Tracking::WithMapInitialization()
 	      TotalNum++;
 	}
 	cout << "Total Model Points " << TotalNum << endl;
+	mpMap->vpSearchedModelPoints.clear();
+	mpMap->vpSearchedModelPoints.resize(mCurrentFrame.N);
+	mpMap->vpSearchedModelPoints = vSearchedMapPoints;
 
 // 	int matches = matcher.SearchByModelProjection(pKFini, mpMap->GetAllModelPoints(), 3);
 // 	cout << "Model points searched with " << matches << " points" << endl;

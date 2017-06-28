@@ -664,16 +664,27 @@ void MapDrawer::DrawRay(pangolin::OpenGlMatrix &Twc)
     glBegin(GL_LINES);
     
     float x = Twc.m[12], y = Twc.m[13], z = Twc.m[14];
-    vector<Eigen::Vector3d> vPtPos = mpMap->mvPointsPos;
-    vector<int> vIndex = mpMap->vIndexProjFrameMapPt;
-    for(size_t i=0; i < vIndex.size(); i++)
+    
+    vector<MapPoint*> vpModelPoints = mpMap->vpSearchedModelPoints;
+    for(MapPoint* it:vpModelPoints)
     {
-	if(vIndex[i] == -1)
+	if(!it)
 	  continue;
-	Eigen::Vector3d pt = vPtPos[vIndex[i]];
+	cv::Mat mPos = it->GetWorldPos();
 	glVertex3f(x, y, z);
-	glVertex3f(pt[0], pt[1], pt[2]);
+	glVertex3f(mPos.at<float>(0), mPos.at<float>(1), mPos.at<float>(2));
     }
+    
+//     vector<Eigen::Vector3d> vPtPos = mpMap->mvPointsPos;
+//     vector<int> vIndex = mpMap->vIndexProjFrameMapPt;
+//     for(size_t i=0; i < vIndex.size(); i++)
+//     {
+// 	if(vIndex[i] == -1)
+// 	  continue;
+// 	Eigen::Vector3d pt = vPtPos[vIndex[i]];
+// 	glVertex3f(x, y, z);
+// 	glVertex3f(pt[0], pt[1], pt[2]);
+//     }
 //     cout << endl;
     
     glEnd();
