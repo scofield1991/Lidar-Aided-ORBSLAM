@@ -67,6 +67,8 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
     {
         if(KFit->first == Fit->first)
         {
+	    cout << "Got a match candidate" << endl;
+	  
             const vector<unsigned int> vIndicesKF = KFit->second;
             const vector<unsigned int> vIndicesF = Fit->second;
 
@@ -82,6 +84,8 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
                 if(pMP->isBad())
                     continue;                
 
+		cout << "ready for compare descriptors" << endl;
+		
                 const cv::Mat &dKF= pMdKF.mDes.row(realIdxKF);
 
                 int bestDist1=256;
@@ -111,7 +115,7 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
                     }
                 }
 
-                if(bestDist1<=120/*TH_LOW*/)
+                if(bestDist1<=TH_LOW)
                 {
                     if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2))
                     {
