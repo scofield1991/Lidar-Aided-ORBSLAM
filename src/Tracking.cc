@@ -345,6 +345,7 @@ void Tracking::WithMapInitialization()
         
         ORBmatcher matcher(0.7);
 	vector<MapPoint*> vSearchedMapPoints;
+	vSearchedMapPoints = vector<MapPoint*>(mCurrentFrame.N,static_cast<MapPoint*>(NULL));
 	mCurrentFrame.ComputeBoW();
 	for(int i = 0; i < vCandKFs.size(); i++)
 	{
@@ -352,7 +353,7 @@ void Tracking::WithMapInitialization()
 	    int matches = matcher.SearchByModelBoW(tempMdKF, mCurrentFrame, vSearchedMapPoints);
 	    cout << "In " << tempMdKF.nId << "th model kf, " << matches << " model points searched" << endl;
 	}
-	
+
 // 	int matches = matcher.SearchByModelProjection(pKFini, mpMap->GetAllModelPoints(), 3);
 // 	cout << "Model points searched with " << matches << " points" << endl;
 // 	for(int i = 0; i < pKFini->mvpModelPoints.size(); i++)

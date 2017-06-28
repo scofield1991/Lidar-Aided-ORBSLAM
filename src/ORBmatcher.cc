@@ -46,7 +46,7 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
 {
     const vector<MapPoint*> vpMapPointsMdKF = pMdKF.mvpModelPoints;
 
-    vpMapPointMatches = vector<MapPoint*>(F.N,static_cast<MapPoint*>(NULL));
+//     vpMapPointMatches = vector<MapPoint*>(F.N,static_cast<MapPoint*>(NULL));
 
     const DBoW2::FeatureVector &vFeatVecKF = pMdKF.vFeat;
 
