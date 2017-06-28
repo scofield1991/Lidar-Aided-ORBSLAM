@@ -40,6 +40,7 @@ namespace ORB_SLAM2
 
 class KeyFrame;
 class Frame;
+class Map;
 
 struct KFItem
 {
