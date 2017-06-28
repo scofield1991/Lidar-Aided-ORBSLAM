@@ -306,7 +306,7 @@ void Tracking::WithMapInitialization()
 	Matrix4d Twl_eig = Converter::toMatrix4f(Twl_cv).cast<double>();
 	NavState Twl = Converter::toNavState(Twl_eig);
 // 	NavState Twl = kfpair.Twl;
-// 	Twl.IncSmall(dT);
+	Twl.IncSmall(dT);
 	
         // Set Frame pose to the origin
         mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
@@ -886,7 +886,19 @@ void Tracking::Track()
             {
 		if(mpMap->hasGlobalMap())
 		{
-		    
+		    ORBmatcher matcher(0.7);
+		    vector<MapPoint*> vSearchedMapPoints;
+		    vSearchedMapPoints = vector<MapPoint*>(mCurrentFrame.N,static_cast<MapPoint*>(NULL));
+		    mCurrentFrame.ComputeBoW();
+		    int TotalNum = 0;
+		    for(int i = 0; i < vCandKFs.size(); i++)
+		    {
+			ModelKeyFrame tempMdKF = vCandKFs[i];
+			int matches = matcher.SearchByModelBoW(tempMdKF, mCurrentFrame, vSearchedMapPoints);
+			cout << "In " << tempMdKF.nId << "th model kf, " << matches << " model points searched" << endl;
+			TotalNum += matches;
+		    }
+		    cout << "Total Model Points " << TotalNum << ", with ratio " << static_cast<double>(TotalNum)/static_cast<double>(mCurrentFrame.N) << endl;
 		}
 	      
                 // Local Mapping might have changed some MapPoints tracked in last frame
