@@ -293,6 +293,7 @@ void Map::LoadMap(const string& str)
 	pMdKF.mvpModelPoints = vMdMPs;
 	pMdKF.mDes = mDesKF;
 	pMdKF.vAngle = tempAngles;
+	pMdKF.score = 0;
 	//add model keyframe into map
 	this->AddModelKeyFrame(pMdKF);
 	

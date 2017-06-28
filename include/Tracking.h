@@ -103,6 +103,8 @@ public:
     vector<int> vIndexProj;
     void SearchModelPoints();
     
+    bool ModelBasedRelocalization();
+    
 //     vector<MapPoint*> vpSearchedModelPoints;
 
 private:

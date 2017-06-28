@@ -40,6 +40,16 @@ void KeyFrameDatabase::add(KFItem pKFI)
     }
 }
 
+void KeyFrameDatabase::add(ModelKeyFrame& mMdKF)
+{
+    unique_lock<mutex> lock(mMutex);
+
+    for(DBoW2::BowVector::const_iterator vit= mMdKF.vBow.begin(), vend=mMdKF.vBow.end(); vit!=vend; vit++)
+    {
+        mvInvModelKF[vit->first].push_back(mMdKF);
+    }
+}
+
 void KeyFrameDatabase::erase(KFItem pKFI)
 {
     unique_lock<mutex> lock(mMutex);
@@ -52,6 +62,25 @@ void KeyFrameDatabase::erase(KFItem pKFI)
         list<KFItem> &lKFs =   mvInvPoseFile[vit->first];
 
         for(list<KFItem>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
+        {
+	    lKFs.erase(lit);
+	    break;
+        }
+    }
+}
+
+void KeyFrameDatabase::erase(ModelKeyFrame& mMdKF)
+{
+    unique_lock<mutex> lock(mMutex);
+
+    // Erase elements in the Inverse File for the entry
+    DBoW2::BowVector vBowV = mMdKF.vBow;
+    for(DBoW2::BowVector::const_iterator vit=vBowV.begin(), vend=vBowV.end(); vit!=vend; vit++)
+    {
+        // List of KFItem that share the word
+        list<ModelKeyFrame> &lKFs = mvInvModelKF[vit->first];
+
+        for(list<ModelKeyFrame>::iterator lit=lKFs.begin(), lend= lKFs.end(); lit!=lend; lit++)
         {
 	    lKFs.erase(lit);
 	    break;
@@ -157,6 +186,84 @@ vector< KFItem > KeyFrameDatabase::DetectInitLocalization(Frame* F)
         if(si>minScoreToRetain)
         {
             KFItem pKFi = it->second;
+            if(!spAlreadyAddedKF.count(pKFi))
+            {
+                vpRelocCandidates.push_back(pKFi);
+                spAlreadyAddedKF.insert(pKFi);
+            }
+        }
+    }
+
+    return vpRelocCandidates;
+}
+
+std::vector< ModelKeyFrame > KeyFrameDatabase::SelectCandidates(Frame* F)
+{
+    list<ModelKeyFrame> lSPsSharingWords;
+
+    // Search all score pairs that share a word with current frame
+    {
+        unique_lock<mutex> lock(mMutex);
+
+        for(DBoW2::BowVector::const_iterator vit=F->mBowVec.begin(), vend=F->mBowVec.end(); vit != vend; vit++)
+        {
+            list<ModelKeyFrame> &lSPs =   mvInvModelKF[vit->first];
+
+            for(list<ModelKeyFrame>::iterator lit=lSPs.begin(), lend= lSPs.end(); lit!=lend; lit++)
+            {
+                lit->score++;
+                lSPsSharingWords.push_back(*lit);
+            }
+        }
+    }
+    if(lSPsSharingWords.empty())
+        return vector<ModelKeyFrame>();
+
+    // Only compare against those keyframes that share enough words
+    int maxCommonWords=0;
+    for(list<ModelKeyFrame>::iterator lit=lSPsSharingWords.begin(), lend= lSPsSharingWords.end(); lit!=lend; lit++)
+    {
+        if((*lit).score>maxCommonWords)
+            maxCommonWords=(*lit).score;
+    }
+
+    int minCommonWords = maxCommonWords*0.8f;
+
+    list<pair<float,ModelKeyFrame> > lScoreAndMatch;
+
+    int nscores=0;
+    float bestScore = 0;
+    // Compute similarity score.
+    for(list<ModelKeyFrame>::iterator lit=lSPsSharingWords.begin(), lend= lSPsSharingWords.end(); lit!=lend; lit++)
+    {
+
+        if(lit->score>minCommonWords)
+        {
+            nscores++;
+            float si = mpVoc->score(F->mBowVec,lit->vBow);
+//             pKFi->mRelocScore=si;
+            lScoreAndMatch.push_back(make_pair(si,*lit));
+	    if(si > bestScore)
+	    {
+		bestScore = si;
+	    }
+        }
+    }
+
+    if(lScoreAndMatch.empty())
+        return vector<ModelKeyFrame>();
+
+    // Return all those keyframes with a score higher than 0.75*bestScore
+    float minScoreToRetain = 0.75f*bestScore;
+    set<ModelKeyFrame> spAlreadyAddedKF;
+    vector<ModelKeyFrame> vpRelocCandidates;
+    vpRelocCandidates.reserve(lScoreAndMatch.size());
+    for(list<pair<float,ModelKeyFrame> >::iterator it=lScoreAndMatch.begin(), itend=lScoreAndMatch.end(); it!=itend; it++)
+    {
+        const float &si = it->first;
+        if(si>minScoreToRetain)
+        {
+            ModelKeyFrame pKFi = it->second;
             if(!spAlreadyAddedKF.count(pKFi))
             {
                 vpRelocCandidates.push_back(pKFi);

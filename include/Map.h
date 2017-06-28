@@ -82,6 +82,13 @@ struct ModelKeyFrame
     cv::Mat mDes;
     //KF keypoint angle
     std::vector<float> vAngle;
+    //database
+    int score;
+    
+    bool operator<( const ModelKeyFrame& other ) const
+    {
+        return (this->nId < other.nId);
+    }
 };
 
 class Map

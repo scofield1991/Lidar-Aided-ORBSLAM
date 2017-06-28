@@ -90,6 +90,9 @@ public:
     
     void DrawLidarPoints();
     
+    vector<MapPoint*> mvpModelPoints;
+    bool bReadyForModel;
+    
 protected:
     NavState mNavState;
   

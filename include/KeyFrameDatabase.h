@@ -58,16 +58,19 @@ class KeyFrameDatabase
 public:
   
   void add(KFItem pKFI);
+  void add(ModelKeyFrame &mMdKF);
 
   void erase(KFItem pKFI);
+  void erase(ModelKeyFrame &mMdKF);
   
   // Detect init localization
   std::vector<KFItem> DetectInitLocalization(Frame* F);
+  std::vector<ModelKeyFrame> SelectCandidates(Frame* F);
   
 protected:
   // Inverted file
   std::vector<list<KFItem> > mvInvPoseFile;
-  
+  std::vector<list<ModelKeyFrame>> mvInvModelKF;
   
 public:
 

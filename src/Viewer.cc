@@ -69,7 +69,7 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
-    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",false,true);
+    pangolin::Var<bool> menuLocalizationMode("menu.Test Mode",false,true);
     pangolin::Var<bool> menuGlobalBA("menu.Global Mapping",false,true);
     pangolin::Var<bool> menuDrawLidar("menu.Draw Lidar Map",false,true);
     pangolin::Var<bool> menuDrawModelObs("menu.Draw Tracked Model",false,true);
