@@ -65,10 +65,10 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
 
     while(KFit != KFend && Fit != Fend)
     {
-	cout << KFit->first << " " << Fit->first << "|";
+// 	cout << KFit->first << " " << Fit->first << "|";
         if(KFit->first == Fit->first)
         {
-	    cout << "Got a match candidate" << endl;
+// 	    cout << "Got a match candidate" << endl;
 	  
             const vector<unsigned int> vIndicesKF = KFit->second;
             const vector<unsigned int> vIndicesF = Fit->second;
@@ -85,7 +85,7 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
                 if(pMP->isBad())
                     continue;                
 
-		cout << "ready for compare descriptors" << endl;
+// 		cout << "ready for compare descriptors" << endl;
 		
                 const cv::Mat &dKF= pMdKF.mDes.row(realIdxKF);
 
