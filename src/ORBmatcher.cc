@@ -156,7 +156,6 @@ int ORBmatcher::SearchByModelBoW(ModelKeyFrame& pMdKF, Frame& F, std::vector< Ma
         }
     }
 
-cout << endl;
     if(mbCheckOrientation)
     {
         int ind1=-1;
