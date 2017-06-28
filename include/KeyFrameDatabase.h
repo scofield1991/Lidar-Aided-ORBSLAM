@@ -28,6 +28,7 @@
 #include "KeyFrame.h"
 #include "Frame.h"
 #include "ORBVocabulary.h"
+#include "Map.h"
 
 #include<mutex>
 
