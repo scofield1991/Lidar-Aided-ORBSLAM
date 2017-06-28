@@ -1128,7 +1128,7 @@ void Tracking::Track()
 	    double maxScore = 0.0;
 	    int maxIndex = 0;
 	    vector<int> vCandidates;
-	    for(int i = 0; i < vMdKFsTemp; i++)
+	    for(int i = 0; i < vMdKFsTemp.size(); i++)
 	    {
 		ModelKeyFrame kfp = vMdKFsTemp[i];
 		double score = mpORBVocabulary->score(mCurrentFrame.mBowVec, kfp.vBow);
