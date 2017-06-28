@@ -359,7 +359,7 @@ void Tracking::WithMapInitialization()
 	    if(*it)
 	      TotalNum++;
 	}
-	cout << "Total Model Points " << TotalNum << ", with ratio " << TotalNum/mCurrentFrame.N << endl;
+	cout << "Total Model Points " << TotalNum << ", with ratio " << static_cast<double>(TotalNum/mCurrentFrame.N) << endl;
 // 	mpMap->vpSearchedModelPoints.clear();
 // 	mpMap->vpSearchedModelPoints.resize(mCurrentFrame.N);
 // 	mpMap->vpSearchedModelPoints = vSearchedMapPoints;
