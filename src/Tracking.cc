@@ -353,6 +353,13 @@ void Tracking::WithMapInitialization()
 	    int matches = matcher.SearchByModelBoW(tempMdKF, mCurrentFrame, vSearchedMapPoints);
 	    cout << "In " << tempMdKF.nId << "th model kf, " << matches << " model points searched" << endl;
 	}
+	int TotalNum = 0;
+	for(vector<MapPoint*>::iterator it = vSearchedMapPoints.begin(); it != vSearchedMapPoints.end(); it++)
+	{
+	    if(it)
+	      TotalNum++;
+	}
+	cout << "Total Model Points " << TotalNum << endl;
 
 // 	int matches = matcher.SearchByModelProjection(pKFini, mpMap->GetAllModelPoints(), 3);
 // 	cout << "Model points searched with " << matches << " points" << endl;
