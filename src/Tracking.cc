@@ -345,6 +345,7 @@ void Tracking::WithMapInitialization()
         
         ORBmatcher matcher(0.7);
 	vector<MapPoint*> vSearchedMapPoints;
+	mCurrentFrame.ComputeBoW();
 	for(int i = 0; i < vCandKFs.size(); i++)
 	{
 	    ModelKeyFrame tempMdKF = vCandKFs[i];
