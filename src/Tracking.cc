@@ -1107,7 +1107,7 @@ void Tracking::Track()
         {
 	    // Localization Mode: Local Mapping is deactivated
 	    cout << "FATAL, unsupport Test Mode" << endl;
-	    exit(1);
+// 	    exit(1);
 	    
 	    vector<ModelKeyFrame> vMdKFsTemp = mpMap->GetAllModelKFs();
 	    if(!isInitMapDB)
