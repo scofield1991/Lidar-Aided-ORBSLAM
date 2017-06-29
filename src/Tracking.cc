@@ -1110,17 +1110,17 @@ void Tracking::Track()
 // 	    exit(1);
 	    
 	    vector<ModelKeyFrame> vMdKFsTemp = mpMap->GetAllModelKFs();
-	    if(!isInitMapDB)
-	    {
-	      cout << "Create Map Database" << endl;
-// 	      vector<ModelKeyFrame> vMdKFsTemp = mpMap->GetAllModelKFs();
-	      for(int i = 0;i < vMdKFsTemp.size(); i++)
-	      {
-		  mpMapDB->add(vMdKFsTemp[i]);
-	      }
-	      cout << "Finish" << endl;
-	      isInitMapDB = true;
-	    }
+// 	    if(!isInitMapDB)
+// 	    {
+// 	      cout << "Create Map Database" << endl;
+// // 	      vector<ModelKeyFrame> vMdKFsTemp = mpMap->GetAllModelKFs();
+// 	      for(int i = 0;i < vMdKFsTemp.size(); i++)
+// 	      {
+// 		  mpMapDB->add(vMdKFsTemp[i]);
+// 	      }
+// 	      cout << "Finish" << endl;
+// 	      isInitMapDB = true;
+// 	    }
 	    
 	    //Compute Bag of Words Vector
 	    mCurrentFrame.ComputeBoW();
