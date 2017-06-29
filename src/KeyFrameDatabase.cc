@@ -42,9 +42,7 @@ void KeyFrameDatabase::add(KFItem pKFI)
 
 void KeyFrameDatabase::add(ModelKeyFrame& mMdKF)
 {
-    unique_lock<mutex> lock(mMutex);
-
-    cout << "fuck " << endl;
+// //     unique_lock<mutex> lock(mMutex);
     
     for(DBoW2::BowVector::const_iterator vit= mMdKF.vBow.begin(), vend=mMdKF.vBow.end(); vit!=vend; vit++)
     {
@@ -282,6 +280,7 @@ KeyFrameDatabase::KeyFrameDatabase (const ORBVocabulary &voc):
 {
     mvInvertedFile.resize(voc.size());
     mvInvPoseFile.resize(voc.size());
+    mvInvModelKF.resize(voc.size());
 }
 
 
