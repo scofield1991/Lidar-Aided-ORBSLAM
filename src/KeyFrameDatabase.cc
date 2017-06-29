@@ -44,6 +44,8 @@ void KeyFrameDatabase::add(ModelKeyFrame& mMdKF)
 {
     unique_lock<mutex> lock(mMutex);
 
+    cout << "fuck " << endl;
+    
     for(DBoW2::BowVector::const_iterator vit= mMdKF.vBow.begin(), vend=mMdKF.vBow.end(); vit!=vend; vit++)
     {
         mvInvModelKF[vit->first].push_back(mMdKF);
