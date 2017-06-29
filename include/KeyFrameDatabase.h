@@ -37,22 +37,11 @@
 extern cv::Mat K;
 namespace ORB_SLAM2
 {
-
+struct KFItem;
+struct ModelKeyFrame;
 class KeyFrame;
 class Frame;
-class Map;
-
-struct KFItem
-{
-    cv::Mat Twc;
-    NavState Twl;
-    int score;
-    DBoW2::BowVector vBow;
-    bool operator<( const KFItem& other ) const
-    {
-        return ((Twl.Get_P() - other.Twl.Get_P()).norm() < 1e-5) && (score == other.score) && (vBow.size() == other.vBow.size());
-    }
-};
+// class Map;
 
 class KeyFrameDatabase
 {
@@ -71,8 +60,8 @@ public:
   
 protected:
   // Inverted file
-  std::vector<list<KFItem> > mvInvPoseFile;
-  std::vector<list<ModelKeyFrame>> mvInvModelKF;
+  std::vector<list<ORB_SLAM2::KFItem> > mvInvPoseFile;
+  std::vector<list<ORB_SLAM2::ModelKeyFrame>> mvInvModelKF;
   
 public:
 

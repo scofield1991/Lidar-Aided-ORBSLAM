@@ -91,6 +91,18 @@ struct ModelKeyFrame
     }
 };
 
+struct KFItem
+{
+    cv::Mat Twc;
+    NavState Twl;
+    int score;
+    DBoW2::BowVector vBow;
+    bool operator<( const KFItem& other ) const
+    {
+        return ((Twl.Get_P() - other.Twl.Get_P()).norm() < 1e-5) && (score == other.score) && (vBow.size() == other.vBow.size());
+    }
+};
+
 class Map
 { 
   
